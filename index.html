@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCRツール</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="loading-box">
+    <i class="fas fa-circle-notch fa-spin loading-spin"></i>
+    <p class="loading-title">OpenCV.js を読み込み中</p>
+    <p id="loadingMsg" class="loading-sub">インターネット接続が必要です</p>
+  </div>
+</div>
+
+<header class="app-header">
+  <div class="header-brand">
+    <i class="fas fa-file-waveform brand-icon"></i>
+    <span class="brand-name">OCRツール</span>
+  </div>
+  <nav class="stepper" id="stepper">
+    <button class="step-item is-active" data-step="1" id="stepBtn1">
+      <span class="step-num">1</span><span class="step-name"><i class="fas fa-image"></i> 画像入力</span>
+    </button>
+    <i class="fas fa-chevron-right step-arrow"></i>
+    <button class="step-item" data-step="2" id="stepBtn2" disabled>
+      <span class="step-num">2</span><span class="step-name"><i class="fas fa-magnifying-glass"></i> テンプレート照合</span>
+    </button>
+    <i class="fas fa-chevron-right step-arrow"></i>
+    <button class="step-item" data-step="3" id="stepBtn3" disabled>
+      <span class="step-num">3</span><span class="step-name"><i class="fas fa-eraser"></i> 罫線除去</span>
+    </button>
+    <i class="fas fa-chevron-right step-arrow"></i>
+    <button class="step-item" data-step="4" id="stepBtn4" disabled>
+      <span class="step-num">4</span><span class="step-name"><i class="fas fa-spell-check"></i> OCR</span>
+    </button>
+  </nav>
+  <div class="header-actions">
+    <button id="btnHelp" class="btn btn-icon" title="使い方"><i class="fas fa-circle-question"></i></button>
+  </div>
+</header>
+
+<main class="app-main">
+  <div class="step-panels">
+
+    <!-- STEP 1 -->
+    <div class="step-panel" id="panel1">
+      <div id="dropZone" class="drop-zone">
+        <div class="drop-inner">
+          <i class="fas fa-paste drop-icon"></i>
+          <p class="drop-title">帳票画像を貼り付けてください</p>
+          <p class="drop-sub"><kbd>Ctrl+V</kbd> でクリップボードから、またはドラッグ＆ドロップ</p>
+          <div class="drop-actions">
+            <button id="btnPaste" class="btn btn-primary"><i class="fas fa-clipboard"></i> 貼付け</button>
+            <button id="btnFileOpen" class="btn btn-outline"><i class="fas fa-folder-open"></i> ファイルを開く</button>
+            <button id="btnSampleLoad" class="btn btn-ghost"><i class="fas fa-images"></i> サンプル</button>
+          </div>
+        </div>
+      </div>
+      <div id="step1Preview" class="step1-preview hidden">
+        <div class="preview-hdr">
+          <span class="preview-title"><i class="fas fa-image"></i> 入力画像 <span id="step1Dim" class="dim-badge"></span></span>
+          <div class="preview-acts">
+            <button id="btnSampleClear" class="btn btn-ghost btn-sm" style="display:none"><i class="fas fa-trash-can"></i> サンプルクリア</button>
+            <button id="btnChangeImage" class="btn btn-ghost btn-sm"><i class="fas fa-rotate"></i> 画像を変更</button>
+          </div>
+        </div>
+        <div class="preview-body"><canvas id="canvasSource"></canvas></div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step-panel hidden" id="panel2">
+      <aside class="match-sidebar">
+        <div class="sidebar-hdr">
+          <span><i class="fas fa-layer-group"></i> テンプレート</span>
+          <button id="btnAddTemplate" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> 追加</button>
+        </div>
+        <div class="sidebar-sub-acts">
+          <button id="btnSampleLoadTpl" class="btn btn-ghost btn-sm"><i class="fas fa-images"></i> サンプル読込</button>
+          <button id="btnSampleClearTpl" class="btn btn-ghost btn-sm"><i class="fas fa-trash-can"></i> サンプル削除</button>
+        </div>
+        <div id="templateList" class="template-list">
+          <div class="empty-hint"><i class="fas fa-layer-group"></i><span>テンプレート未登録</span></div>
+        </div>
+        <div class="settings-section">
+          <button class="settings-toggle" id="matchSettingsToggle">
+            <i class="fas fa-gear"></i> 傾き補正設定 <i class="fas fa-chevron-down chevron"></i>
+          </button>
+          <div class="settings-body" id="matchSettingsBody">
+            <div class="field-row"><label>補正範囲 ±°</label><input type="number" id="angleRange" class="num-input" value="2" min="0" max="10" step="0.5"></div>
+            <div class="field-row"><label>ステップ °</label><input type="number" id="angleStep" class="num-input" value="1" min="0.5" max="5" step="0.5"></div>
+            <p class="hint-text">補正範囲を 0 にすると傾き補正をスキップします</p>
+          </div>
+        </div>
+      </aside>
+      <section class="match-main">
+        <div class="match-toolbar">
+          <div class="source-ref">
+            <span class="ref-label"><i class="fas fa-image"></i> 照合対象</span>
+            <canvas id="canvasSourceThumb" class="source-thumb"></canvas>
+          </div>
+          <button id="btnRunMatch" class="btn-run-match" disabled><i class="fas fa-magnifying-glass"></i> 照合実行</button>
+          <div id="matchProgress" class="match-progress hidden">
+            <div class="match-progress-track"><div id="matchProgressBar" class="match-progress-fill"></div></div>
+            <span id="matchProgressMsg" class="match-progress-msg">照合中…</span>
+          </div>
+        </div>
+        <div class="match-results-wrap">
+          <div id="matchNoTpl" class="match-hint"><i class="fas fa-triangle-exclamation"></i> テンプレートを登録してから照合実行してください</div>
+          <div id="matchResults" class="match-results hidden">
+            <div class="match-results-hdr"><span><i class="fas fa-ranking-star"></i> スコアランキング</span><span id="matchResultsCount" class="results-count"></span></div>
+            <div id="matchResultsList"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step-panel hidden" id="panel3">
+      <aside class="param-panel" id="paramPanel">
+        <div id="rotBanner" class="rot-banner hidden"><i class="fas fa-rotate"></i><span id="rotBannerText">回転補正: 0°</span></div>
+        <div class="pgroup">
+          <button class="pgroup-hdr is-open" data-target="pgb0"><span><i class="fas fa-sliders"></i> 二値化</span><i class="fas fa-chevron-down pg-caret"></i></button>
+          <div class="pgroup-body" id="pgb0">
+            <div class="prow"><label class="plabel">方式</label>
+              <select id="binaryMethod" class="pselect"><option value="otsu">Otsu 自動</option><option value="adaptive" selected>適応的</option><option value="manual">手動</option></select>
+            </div>
+            <div class="prow hidden" id="rowManualThresh"><label class="plabel">閾値 <b id="valManualThresh" class="pval">128</b></label><input type="range" id="manualThresh" class="pslider" min="0" max="255" value="128"></div>
+            <div class="prow hidden" id="rowAdaptiveBlock"><label class="plabel">ブロック <b id="valAdaptiveBlock" class="pval">51</b></label><input type="range" id="adaptiveBlock" class="pslider" min="3" max="51" step="2" value="51"></div>
+            <div class="prow hidden" id="rowAdaptiveC"><label class="plabel">定数C <b id="valAdaptiveC" class="pval">-5</b></label><input type="range" id="adaptiveC" class="pslider" min="-20" max="20" value="-5"></div>
+          </div>
+        </div>
+        <div class="pgroup">
+          <button class="pgroup-hdr is-open" data-target="pgb1"><span><i class="fas fa-grip-lines"></i> 水平罫線</span><i class="fas fa-chevron-down pg-caret"></i></button>
+          <div class="pgroup-body" id="pgb1">
+            <div class="prow"><label class="plabel">検出</label><label class="ptoggle"><input type="checkbox" id="enableHoriz" checked><span class="ptoggle-track"></span></label></div>
+            <div class="prow"><label class="plabel">最小線長 <b id="valHorizLen" class="pval">5</b>%</label><input type="range" id="horizLen" class="pslider" min="1" max="80" value="5"></div>
+            <div class="prow"><label class="plabel">線の太さ <b id="valHorizThick" class="pval">1</b>px</label><input type="range" id="horizThick" class="pslider" min="1" max="10" value="1"></div>
+            <div class="prow"><label class="plabel">膨張 <b id="valHorizDilate" class="pval">2</b>回</label><input type="range" id="horizDilate" class="pslider" min="0" max="5" value="2"></div>
+          </div>
+        </div>
+        <div class="pgroup">
+          <button class="pgroup-hdr is-open" data-target="pgb2"><span><i class="fas fa-grip-lines-vertical"></i> 垂直罫線</span><i class="fas fa-chevron-down pg-caret"></i></button>
+          <div class="pgroup-body" id="pgb2">
+            <div class="prow"><label class="plabel">検出</label><label class="ptoggle"><input type="checkbox" id="enableVert" checked><span class="ptoggle-track"></span></label></div>
+            <div class="prow"><label class="plabel">最小線長 <b id="valVertLen" class="pval">5</b>%</label><input type="range" id="vertLen" class="pslider" min="1" max="80" value="5"></div>
+            <div class="prow"><label class="plabel">線の幅 <b id="valVertThick" class="pval">1</b>px</label><input type="range" id="vertThick" class="pslider" min="1" max="10" value="1"></div>
+            <div class="prow"><label class="plabel">膨張 <b id="valVertDilate" class="pval">2</b>回</label><input type="range" id="vertDilate" class="pslider" min="0" max="5" value="2"></div>
+          </div>
+        </div>
+        <div class="pgroup">
+          <button class="pgroup-hdr" data-target="pgb3"><span><i class="fas fa-wand-magic-sparkles"></i> 後処理</span><i class="fas fa-chevron-down pg-caret"></i></button>
+          <div class="pgroup-body is-collapsed" id="pgb3">
+            <div class="prow"><label class="plabel">マスク膨張 <b id="valMaskDilate" class="pval">0</b>px</label><input type="range" id="maskDilate" class="pslider" min="0" max="5" value="0"></div>
+            <div class="prow"><label class="plabel">出力ベース</label>
+              <select id="outputBase" class="pselect"><option value="original">カラー原画像</option><option value="gray">グレースケール</option><option value="binary">二値化画像</option></select>
+            </div>
+          </div>
+        </div>
+        <div class="pgroup-footer">
+          <button id="btnReset" class="btn btn-ghost btn-block"><i class="fas fa-rotate-left"></i> パラメータリセット</button>
+          <button id="btnDownload" class="btn btn-success btn-block" style="margin-top:6px" disabled><i class="fas fa-download"></i> 除去結果を保存</button>
+        </div>
+      </aside>
+      <section class="process-main">
+        <div class="steps-grid" id="stepsGrid">
+          <div class="step-card"><div class="step-hdr"><span class="step-badge">1</span><span class="step-label">回転補正後・原画像</span><span class="step-dim" id="dim0"></span></div><div class="step-body"><canvas id="canvas0"></canvas></div></div>
+          <div class="step-card"><div class="step-hdr"><span class="step-badge">2</span><span class="step-label">グレー＋二値化</span><span class="step-dim" id="dim1"></span></div><div class="step-body"><canvas id="canvas1"></canvas></div></div>
+          <div class="step-card"><div class="step-hdr"><span class="step-badge">3</span><span class="step-label">罫線マスク（赤ハイライト）</span><span class="step-dim" id="dim2"></span></div><div class="step-body"><canvas id="canvas2"></canvas></div></div>
+          <div class="step-card step-card--result"><div class="step-hdr"><span class="step-badge step-badge--result">4</span><span class="step-label">罫線除去結果</span><span class="step-dim" id="dim3"></span><button id="btnDlInline" class="btn-dl-inline" title="保存"><i class="fas fa-download"></i></button></div><div class="step-body"><canvas id="canvas3"></canvas></div></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step-panel hidden" id="panel4">
+      <aside class="ocr-side-panel">
+        <div class="ocr-info-block">
+          <div class="ocr-block-hdr"><i class="fas fa-crosshairs"></i> OCR読取設定</div>
+          <div class="info-row"><span class="info-label">帳票</span><span id="infoFormName" class="info-val">—</span></div>
+          <div class="info-row"><span class="info-label">識別アンカー</span><span id="infoIdentName" class="info-val">—</span></div>
+          <div class="info-row"><span class="info-label">OCR基準</span><span id="infoLayoutName" class="info-val info-mono">—</span></div>
+          <div class="info-row"><span class="info-label">補正角度</span><span id="infoAngle" class="info-val info-mono">—</span></div>
+          <div class="info-regions-row"><span class="info-label">読取フィールド</span><div id="infoRegions" class="info-regions-wrap"></div></div>
+        </div>
+        <div class="ocr-info-block">
+          <div class="ocr-block-hdr"><i class="fas fa-gear"></i> OCR設定</div>
+          <div class="prow"><label class="plabel">解析モード</label>
+            <select id="ocrPsm" class="pselect">
+              <option value="3">自動（推奨）</option><option value="6">単一ブロック</option>
+              <option value="4">縦長テキスト</option><option value="7">単一行</option>
+            </select>
+          </div>
+        </div>
+        <div class="pgroup-footer">
+          <button id="btnRunOcr" class="btn btn-ocr btn-block" disabled>
+            <i class="fas fa-spell-check"></i> OCR実行（全フィールド）
+          </button>
+        </div>
+      </aside>
+      <section class="ocr-main">
+        <div class="ocr-preview-area">
+          <div class="ocr-preview-label"><i class="fas fa-eye"></i> 読取領域プレビュー（罫線除去後）</div>
+          <div class="ocr-canvas-wrap"><canvas id="canvasOcrPreview"></canvas></div>
+        </div>
+        <div id="ocrPanel" class="ocr-panel hidden">
+          <div class="ocr-panel-hdr">
+            <span class="ocr-panel-title"><i class="fas fa-spell-check"></i> OCR 認識結果 <span id="ocrStat" class="ocr-stat"></span></span>
+            <div class="ocr-panel-acts">
+              <button id="btnCopyOcr" class="btn btn-sm btn-outline" title="全フィールドをまとめてコピー"><i class="fas fa-copy"></i> 全コピー</button>
+              <button id="btnCloseOcr" class="btn-icon-sm" title="閉じる"><i class="fas fa-xmark"></i></button>
+            </div>
+          </div>
+          <div id="ocrProgress" class="ocr-progress hidden">
+            <div class="ocr-progress-track"><div id="ocrProgressFill" class="ocr-progress-fill"></div></div>
+            <span id="ocrProgressMsg" class="ocr-progress-msg">初期化中…</span>
+          </div>
+          <div id="ocrResult" class="ocr-result hidden">
+            <div id="ocrFieldResults" class="ocr-field-results"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </div><!-- /step-panels -->
+
+  <div class="step-nav" id="stepNav">
+    <div class="step-nav-hint" id="stepNavHint"></div>
+    <div class="step-nav-btns">
+      <button id="btnPrev" class="btn btn-ghost" disabled><i class="fas fa-chevron-left"></i> 戻る</button>
+      <button id="btnNext" class="btn btn-primary" disabled>次へ <i class="fas fa-chevron-right"></i></button>
+    </div>
+  </div>
+</main>
+
+<!-- ══ テンプレート登録モーダル ════════════════════════ -->
+<div class="modal-overlay hidden" id="tplModal">
+  <div class="modal modal--tpl">
+    <div class="modal-hdr">
+      <h2><i class="fas fa-plus"></i> テンプレート追加</h2>
+      <button class="modal-close" id="closeTplModal"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-bdy">
+      <!-- 帳票名 -->
+      <div class="form-group">
+        <label class="form-label">帳票名 <span class="required">*</span></label>
+        <input type="text" id="tplFormName" class="form-input" placeholder="例：発注書" autocomplete="off">
+      </div>
+
+      <!-- 識別アンカー -->
+      <div class="anchor-block">
+        <div class="anchor-block-hdr">
+          <span class="anchor-tag anchor-tag--id">ID</span>
+          識別アンカー
+          <span class="anchor-desc">帳票の種別判定・傾き補正に使用</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">アンカー名 <span class="required">*</span></label>
+          <input type="text" id="tplIdentName" class="form-input" placeholder="例：タイトルブロック" autocomplete="off">
+        </div>
+        <div class="modal-drop-zone modal-drop-zone--sm" id="identDropZone">
+          <div id="identDropHint" class="drop-hint-inner">
+            <i class="fas fa-image"></i>
+            <p>Ctrl+V／ドロップ／クリック<br><small>帳票上の特徴的な部分（ロゴ・タイトル等）</small></p>
+          </div>
+          <img id="identPreview" alt="" style="display:none; max-height:90px; max-width:100%; object-fit:contain;">
+        </div>
+        <input type="file" id="identFileInput" accept="image/*" style="display:none">
+      </div>
+
+      <!-- OCR読取フィールド定義 -->
+      <div class="anchor-block">
+        <div class="anchor-block-hdr">
+          <span class="anchor-tag anchor-tag--ocr">OCR</span>
+          OCR読取フィールド定義
+          <span class="anchor-desc">画像上でドラッグして範囲を指定</span>
+        </div>
+        <!-- レイアウトアンカー切替 -->
+        <label class="layout-toggle">
+          <input type="checkbox" id="useLayoutAnchor">
+          <span class="ptoggle-track"></span>
+          <span>識別とは別の参照画像を使用する（スキャンずれ補正に強い）</span>
+        </label>
+        <!-- レイアウト画像アップロード -->
+        <div id="layoutDropArea" class="hidden">
+          <div class="modal-drop-zone modal-drop-zone--sm" id="layoutDropZone">
+            <div id="layoutDropHint" class="drop-hint-inner">
+              <i class="fas fa-file-image"></i>
+              <p>Ctrl+V／ドロップ／クリック<br><small>帳票全体の画像を推奨</small></p>
+            </div>
+            <img id="layoutPreview" alt="" style="display:none; max-height:60px; max-width:100%; object-fit:contain;">
+          </div>
+          <input type="file" id="layoutFileInput" accept="image/*" style="display:none">
+        </div>
+        <!-- 描画キャンバス -->
+        <div id="canvasSection" class="canvas-section hidden">
+          <div class="canvas-instr">
+            <i class="fas fa-pencil"></i>
+            <span id="canvasInstrText">フィールド名を入力し、画像上でドラッグして範囲を指定してください</span>
+          </div>
+          <div class="layout-canvas-wrap" id="layoutCanvasWrap">
+            <div id="canvasPlaceholder" class="canvas-placeholder">
+              <i class="fas fa-image"></i><span>参照画像を読み込んでください</span>
+            </div>
+            <canvas id="layoutCanvas" style="display:none; cursor:crosshair;"></canvas>
+          </div>
+          <input type="text" id="regName" class="form-input" placeholder="フィールド名（例：発注番号）を入力してからドラッグ" autocomplete="off">
+        </div>
+        <!-- 登録済みフィールドリスト -->
+        <div id="regionList" class="region-list">
+          <div class="region-empty-hint">フィールドを追加してください（省略可）</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button id="btnTplCancel" class="btn btn-ghost">キャンセル</button>
+      <button id="btnTplRegister" class="btn btn-primary"><i class="fas fa-check"></i> 登録</button>
+    </div>
+  </div>
+</div>
+
+<!-- サンプルモーダル -->
+<div class="modal-overlay hidden" id="sampleModal">
+  <div class="modal">
+    <div class="modal-hdr"><h2><i class="fas fa-images"></i> サンプル画像を選択</h2>
+      <button class="modal-close" id="closeSampleModal"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-bdy"><div class="sample-grid" id="sampleGrid"></div></div>
+  </div>
+</div>
+
+<!-- ヘルプモーダル -->
+<div class="modal-overlay hidden" id="helpModal">
+  <div class="modal modal--lg">
+    <div class="modal-hdr"><h2><i class="fas fa-circle-question"></i> 使い方</h2>
+      <button class="modal-close" id="closeHelpModal"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-bdy help-bdy">
+      <div class="help-sec"><h3><i class="fas fa-list-ol"></i> 処理フロー</h3>
+        <ol><li><b>画像入力</b>：帳票画像を貼り付け</li>
+        <li><b>テンプレート照合</b>：識別アンカーで帳票種別判定 ＋ 傾き補正角度取得</li>
+        <li><b>罫線除去</b>：回転補正 → レイアウトアンカーでOCR座標確定 → 罫線除去</li>
+        <li><b>OCR</b>：確定座標で全フィールドを一括認識</li></ol>
+      </div>
+      <div class="help-sec"><h3><i class="fas fa-layer-group"></i> 2種類のアンカー</h3>
+        <ul><li><b>識別アンカー（ID）</b>：帳票上の特徴的な小領域。スコアの高さで帳票種別を判定し、回転補正角度を決定します</li>
+        <li><b>レイアウトアンカー（OCR）</b>：帳票全体など大きめの画像。回転補正後の実スキャン画像にマッチングして微妙なスキャンずれを吸収し、OCR座標の基準点を確定します</li>
+        <li>チェックをオフにすると識別アンカーの位置がそのままOCR基準になります（簡易モード）</li></ul>
+      </div>
+      <div class="help-sec"><h3><i class="fas fa-pencil"></i> フィールド定義の操作</h3>
+        <ul><li>フィールド名を入力欄に入力してから、キャンバス上でドラッグして矩形を描きます</li>
+        <li>Enter キーでもドラッグ完了後にフィールドが追加されます</li>
+        <li>追加後はフィールド名がリセットされ、次のフィールドをすぐに定義できます</li></ul>
+      </div>
+      <div class="help-sec"><h3><i class="fas fa-ranking-star"></i> スコアの見方</h3>
+        <ul><li><b>0.80以上</b>：高い一致（同一帳票の可能性大）</li>
+        <li><b>0.50〜0.79</b>：中程度（要確認）</li>
+        <li><b>0.50未満</b>：一致度が低い</li></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+<input type="file" id="fileInput" accept="image/*" style="display:none">
+
+<script>
+  var Module = { onRuntimeInitialized: function() { document.dispatchEvent(new CustomEvent('cv-ready')); } };
+</script>
+<script async src="https://docs.opencv.org/4.8.0/opencv.js" onerror="document.dispatchEvent(new CustomEvent('cv-error'))"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="samples.js"></script>
+<script src="processor.js"></script>
+<script src="matcher_engine.js"></script>
+<script src="ocr.js"></script>
+<script src="ui.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
