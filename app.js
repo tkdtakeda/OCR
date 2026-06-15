@@ -163,16 +163,20 @@
     _identDataURL=null; _identNatW=0; _identNatH=0; _identImgEl=null; _identScale=1;
     _layoutDataURL=null; _layoutNatW=0; _layoutNatH=0; _layoutImgEl=null; _layoutScale=1;
     _useLayoutAnchor=false; _lastPasteTarget='ident'; _tplRegions=[]; _isDrawing=false;
-    $('tplFormName').value=''; $('tplIdentName').value=''; $('regName').value='';
-    $('identPreview').style.display='none'; $('identDropHint').style.display='flex';
+    // ?. で全アクセスを保護（旧HTMLや要素未存在時のTypeErrorを防止）
+    const fn=$('tplFormName'), an=$('tplIdentName'), rn=$('regName');
+    if(fn)fn.value=''; if(an)an.value=''; if(rn)rn.value='';
+    const ip=$('identPreview'), ih=$('identDropHint');
+    if(ip)ip.style.display='none'; if(ih)ih.style.display='flex';
     $('layoutDropArea')?.classList.add('hidden');
-    $('useLayoutAnchor').checked=false;
-    const lp=$('layoutPreview'); if(lp){lp.src=''; lp.style.display='none'; $('layoutDropHint').style.display='flex';}
+    const ua=$('useLayoutAnchor'); if(ua)ua.checked=false;
+    const lp=$('layoutPreview'), lh=$('layoutDropHint');
+    if(lp){lp.src=''; lp.style.display='none';} if(lh)lh.style.display='flex';
     $('canvasSection')?.classList.add('hidden');
     const cv=$('layoutCanvas'); if(cv){cv.style.display='none'; cv.width=0; cv.height=0;}
-    $('canvasPlaceholder').style.display='flex';
+    const cp=$('canvasPlaceholder'); if(cp)cp.style.display='flex';
     UIController.renderRegionList(_tplRegions, removeRegionFromModal);
-    UIController.openModal('tplModal'); setTimeout(()=>$('tplFormName').focus(),60);
+    UIController.openModal('tplModal'); setTimeout(()=>$('tplFormName')?.focus(),60);
   }
 
   /* ── 識別アンカー画像設定 ──────────────────────────── */
