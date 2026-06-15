@@ -219,6 +219,7 @@
     const img=_activeImgEl();
     if (img) { canvas.style.display='block'; ph.style.display='none'; redrawCanvas(); }
     else      { canvas.style.display='none';  ph.style.display='flex'; }
+    setTimeout(()=>section.scrollIntoView({behavior:'smooth',block:'nearest'}), 60);
   }
 
   /* ── レイアウトモード切替 ──────────────────────────── */
