@@ -544,15 +544,85 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 .layout-toggle .ptoggle-track { flex-shrink: 0; }
 
 /* 描画キャンバスセクション */
-.canvas-section { display: flex; flex-direction: column; gap: 6px; }
-.canvas-instr { display: flex; align-items: center; gap: 6px;
-  font-size: .73rem; color: var(--c-pri); font-weight: 500; }
-.layout-canvas-wrap { height: 380px; overflow: auto; border: 1.5px solid var(--c-border-dk);
+.canvas-section { display: flex; flex-direction: column; gap: 8px; }
+
+/* ── ステップガイド ──────────────────────────────────── */
+.cs-steps {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  font-size: .74rem; padding: 6px 10px;
+  background: var(--c-surface2); border-radius: var(--r-sm);
+  border: 1px solid var(--c-border);
+}
+.cs-step {
+  display: flex; align-items: center; gap: 5px;
+  color: var(--c-text-3); padding: 3px 8px; border-radius: 20px;
+  white-space: nowrap; transition: background .15s, color .15s;
+}
+.cs-step-badge {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--c-border-dk); color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: .6rem; font-weight: 700; flex-shrink: 0;
+  transition: background .15s;
+}
+.cs-step-arr { color: var(--c-border-dk); font-size: .6rem; flex-shrink: 0; }
+.cs-step-loop { gap: 5px; }
+
+/* ステップ1 アクティブ */
+.canvas-section[data-cs-state="draw"] .cs-step[data-cs="draw"] {
+  background: var(--c-pri-lt); color: var(--c-pri); font-weight: 700;
+}
+.canvas-section[data-cs-state="draw"] .cs-step[data-cs="draw"] .cs-step-badge {
+  background: var(--c-pri);
+}
+/* ステップ2 アクティブ */
+.canvas-section[data-cs-state="name"] .cs-step[data-cs="name"] {
+  background: #FFF3E6; color: #C25200; font-weight: 700;
+}
+.canvas-section[data-cs-state="name"] .cs-step[data-cs="name"] .cs-step-badge {
+  background: #FF6B00;
+}
+
+/* ── 名前入力行 ──────────────────────────────────────── */
+.cs-name-row {
+  display: flex; gap: 8px; align-items: center;
+  padding: 8px 10px; border-radius: var(--r-sm);
+  border: 1.5px solid var(--c-border); background: var(--c-surface);
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.cs-name-input {
+  flex: 1; border: none; outline: none; font-size: .85rem;
+  font-family: var(--font-ui); color: var(--c-text); background: transparent;
+  padding: 2px 4px;
+}
+.cs-name-input::placeholder { color: var(--c-text-3); }
+
+/* draw 状態：入力行は控えめ、追加ボタンは無効 */
+.canvas-section[data-cs-state="draw"] .cs-name-row {
+  background: var(--c-surface2); border-color: var(--c-border);
+}
+.canvas-section[data-cs-state="draw"] .cs-name-input { color: var(--c-text-3); }
+
+/* name 状態：入力行をオレンジで強調 */
+.canvas-section[data-cs-state="name"] .cs-name-row {
+  border-color: #FF6B00; background: #FFFBF5;
+  box-shadow: 0 0 0 3px rgba(255,107,0,.14);
+}
+.canvas-section[data-cs-state="name"] .cs-name-input { color: var(--c-text); }
+
+/* ── キャンバスラッパー ──────────────────────────────── */
+.layout-canvas-wrap {
+  height: 380px; overflow: auto; border: 1.5px solid var(--c-border-dk);
   border-radius: var(--r-sm); position: relative;
-  background: repeating-conic-gradient(#dde5ef 0% 25%, transparent 0% 50%) 0 0 / 12px 12px; }
+  background: repeating-conic-gradient(#dde5ef 0% 25%, transparent 0% 50%) 0 0 / 12px 12px;
+  display: flex; align-items: flex-start; justify-content: center;
+}
 .layout-canvas-wrap:has(canvas[style*="display: block"]) { cursor: crosshair; }
-.canvas-placeholder { display: flex; flex-direction: column; align-items: center;
-  justify-content: center; height: 100%; gap: 8px; color: var(--c-text-3); font-size: .8rem; }
+.canvas-placeholder {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; width: 100%; min-height: 100%;
+  gap: 8px; color: var(--c-text-3); font-size: .8rem;
+}
 .canvas-placeholder i { font-size: 2rem; }
 #layoutCanvas { display: block; }
 

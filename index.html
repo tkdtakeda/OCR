@@ -300,18 +300,30 @@
           <input type="file" id="layoutFileInput" accept="image/*" style="display:none">
         </div>
         <!-- 描画キャンバス -->
-        <div id="canvasSection" class="canvas-section hidden">
-          <div class="canvas-instr">
-            <i class="fas fa-pencil"></i>
-            <span id="canvasInstrText">画像上でドラッグして範囲を指定し、フィールド名を入力して Enter で確定します</span>
+        <div id="canvasSection" class="canvas-section hidden" data-cs-state="draw">
+          <!-- ステップガイド -->
+          <div class="cs-steps">
+            <span class="cs-step" data-cs="draw"><span class="cs-step-badge">1</span>範囲をドラッグ</span>
+            <i class="fas fa-chevron-right cs-step-arr"></i>
+            <span class="cs-step" data-cs="name"><span class="cs-step-badge">2</span>名前を入力して追加</span>
+            <i class="fas fa-chevron-right cs-step-arr"></i>
+            <span class="cs-step cs-step-loop"><i class="fas fa-rotate"></i>繰り返し</span>
           </div>
+          <!-- 名前入力行（キャンバスより上：常に見える位置） -->
+          <div class="cs-name-row">
+            <input type="text" id="regName" class="cs-name-input"
+                   placeholder="①でドラッグ後に名前を入力（先入力も可）" autocomplete="off">
+            <button type="button" id="btnAddRegion" class="btn btn-primary btn-sm" disabled>
+              <i class="fas fa-check"></i> 追加
+            </button>
+          </div>
+          <!-- キャンバス -->
           <div class="layout-canvas-wrap" id="layoutCanvasWrap">
             <div id="canvasPlaceholder" class="canvas-placeholder">
               <i class="fas fa-image"></i><span>参照画像を読み込んでください</span>
             </div>
             <canvas id="layoutCanvas" style="display:none; cursor:crosshair;"></canvas>
           </div>
-          <input type="text" id="regName" class="form-input" placeholder="フィールド名（例：発注番号）を入力して Enter で確定" autocomplete="off">
         </div>
         <!-- 登録済みフィールドリスト -->
         <div id="regionList" class="region-list">
@@ -355,10 +367,11 @@
         <li>チェックをオフにすると識別アンカーの位置がそのままOCR基準になります（簡易モード）</li></ul>
       </div>
       <div class="help-sec"><h3><i class="fas fa-pencil"></i> フィールド定義の操作</h3>
-        <ul><li>キャンバス上でドラッグして矩形を描くと、オレンジ色の保留領域になります</li>
-        <li>フィールド名を入力欄に入力し、Enter キーまたは確定で領域が追加されます</li>
-        <li>フィールド名を先に入力してからドラッグした場合は、その場で即追加されます</li>
-        <li>追加後はフィールド名がリセットされ、次のフィールドをすぐに定義できます</li></ul>
+        <ul>
+          <li>①キャンバス上でドラッグ → オレンジの保留枠が表示され、入力欄が強調されます</li>
+          <li>②フィールド名を入力して「追加」または Enter → 領域が確定され①に戻ります</li>
+          <li>名前を先に入力してからドラッグすることも可能（その場で即追加されます）</li>
+        </ul>
       </div>
       <div class="help-sec"><h3><i class="fas fa-ranking-star"></i> スコアの見方</h3>
         <ul><li><b>0.80以上</b>：高い一致（同一帳票の可能性大）</li>

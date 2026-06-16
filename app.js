@@ -150,8 +150,8 @@
 
   /* ── Template Modal State ───────────────────────────── */
   const RCOLS=['#1D6BB0','#0F7D5E','#7C3AED','#B45309','#BE1818','#0E6E80'];
-  // キャンバス表示幅の目標値と最大拡大率（小さな画像も見やすく拡大、ぼやけ過ぎは抑制）
-  const CANVAS_W=560, CANVAS_MAX_SCALE=2.5;
+  // 幅を基準に最大活用（小さい画像も 4x まで拡大して見やすく）
+  const CANVAS_W=580, CANVAS_MAX_SCALE=4.0;
   function fitScale(natW) { return natW>0 ? Math.min(CANVAS_MAX_SCALE, CANVAS_W/natW) : 1; }
   let _identDataURL=null, _identNatW=0, _identNatH=0, _identImgEl=null, _identScale=1;
   let _useLayoutAnchor=false, _lastPasteTarget='ident';
@@ -167,6 +167,7 @@
     _identDataURL=null; _identNatW=0; _identNatH=0; _identImgEl=null; _identScale=1;
     _layoutDataURL=null; _layoutNatW=0; _layoutNatH=0; _layoutImgEl=null; _layoutScale=1;
     _useLayoutAnchor=false; _lastPasteTarget='ident'; _tplRegions=[]; _isDrawing=false; _pendingRegion=null;
+    setCanvasState('draw');
     // ?. で全アクセスを保護（旧HTMLや要素未存在時のTypeErrorを防止）
     const fn=$('tplFormName'), an=$('tplIdentName'), rn=$('regName');
     if(fn)fn.value=''; if(an)an.value=''; if(rn)rn.value='';
@@ -220,10 +221,25 @@
     const section=$('canvasSection'), canvas=$('layoutCanvas'), ph=$('canvasPlaceholder');
     if (!section) return;
     section.classList.remove('hidden');
+    _pendingRegion=null; setCanvasState('draw');
     const img=_activeImgEl();
     if (img) { canvas.style.display='block'; ph.style.display='none'; redrawCanvas(); }
     else      { canvas.style.display='none';  ph.style.display='flex'; }
     setTimeout(()=>section.scrollIntoView({behavior:'smooth',block:'nearest'}), 60);
+  }
+
+  /* ── キャンバス状態管理（ステップ1:ドラッグ / ステップ2:名前入力） ── */
+  function setCanvasState(state) {
+    const sec=$('canvasSection'); if(sec) sec.dataset.csState=state;
+    const inp=$('regName'), btn=$('btnAddRegion');
+    if (state==='name') {
+      if(inp) inp.placeholder='フィールド名を入力してください';
+      if(btn) btn.disabled=false;
+      setTimeout(()=>{ if(inp){inp.focus();} },30);
+    } else {
+      if(inp) inp.placeholder='①でドラッグ後に名前を入力（先入力も可）';
+      if(btn) btn.disabled=true;
+    }
   }
 
   /* ── レイアウトモード切替 ──────────────────────────── */
@@ -254,13 +270,11 @@
       ctx.setLineDash([4,3]); ctx.strokeRect(x1,y1,dw,dh); ctx.setLineDash([]);
       ctx.fillStyle='rgba(255,107,0,0.12)'; ctx.fillRect(x1,y1,dw,dh);
     } else if (_pendingRegion) {
-      // 確定済みだがフィールド名待ちの保留領域
+      // 確定済みだがフィールド名待ちの保留領域（テキストはステップガイドに任せる）
       const [rx,ry,rw,rh]=[_pendingRegion.dx*sc,_pendingRegion.dy*sc,_pendingRegion.w*sc,_pendingRegion.h*sc].map(Math.round);
-      ctx.fillStyle='rgba(255,107,0,0.18)'; ctx.fillRect(rx,ry,rw,rh);
-      ctx.strokeStyle='#FF6B00'; ctx.lineWidth=2;
+      ctx.fillStyle='rgba(255,107,0,0.15)'; ctx.fillRect(rx,ry,rw,rh);
+      ctx.strokeStyle='#FF6B00'; ctx.lineWidth=2.5;
       ctx.setLineDash([5,3]); ctx.strokeRect(rx,ry,rw,rh); ctx.setLineDash([]);
-      ctx.fillStyle='#FF6B00'; ctx.font='bold 10px sans-serif'; ctx.textBaseline='top';
-      ctx.fillText('フィールド名を入力 → Enter', rx+3, ry+2); ctx.textBaseline='alphabetic';
     }
   }
 
@@ -273,9 +287,9 @@
     if (dw<5||dh<5) { _pendingRegion=null; redrawCanvas(); return; }
     _pendingRegion={ dx:Math.round(x1/sc), dy:Math.round(y1/sc), w:Math.round(dw/sc), h:Math.round(dh/sc) };
     redrawCanvas();
-    // フィールド名が既に入力済みなら即確定、未入力なら名前入力を促す
+    // フィールド名が既に入力済みなら即確定、未入力ならステップ2へ
     if ($('regName').value.trim()) commitPendingRegion();
-    else { UIController.showToast('フィールド名を入力して Enter キーで確定してください','info',2200); $('regName').focus(); }
+    else setCanvasState('name');
   }
 
   /* ── 保留領域をフィールドとして確定 ────────────────── */
@@ -287,8 +301,9 @@
     _pendingRegion=null;
     UIController.renderRegionList(_tplRegions, removeRegionFromModal);
     redrawCanvas();
-    $('regName').value=''; $('regName').focus();
-    UIController.showToast(`「${name}」を追加しました`,'success',1400);
+    $('regName').value='';
+    setCanvasState('draw');
+    UIController.showToast(`「${name}」を追加しました ― 次の範囲をドラッグしてください`,'success',2000);
   }
 
   function removeRegionFromModal(id) {
@@ -561,6 +576,7 @@
     }
     $('layoutFileInput')?.addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;setLayoutImage(f);e.target.value='';});
     $('regName')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitPendingRegion();}});
+    $('btnAddRegion')?.addEventListener('click',commitPendingRegion);
 
     // Step 3
     $('paramPanel')?.addEventListener('input',debouncedLineRemoval);
