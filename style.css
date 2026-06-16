@@ -535,7 +535,7 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 .anchor-desc { font-size: .7rem; font-weight: 400; color: var(--c-text-3); margin-left: auto; }
 
 /* 小さなドロップゾーン（識別・レイアウト画像用） */
-.modal-drop-zone--sm { min-height: 80px; }
+.modal-drop-zone--sm { min-height: 110px; }
 
 /* レイアウトアンカー切替トグル */
 .layout-toggle { display: flex; align-items: center; gap: 10px; font-size: .78rem;
@@ -583,11 +583,13 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
   background: #FF6B00;
 }
 
-/* ── 名前入力行 ──────────────────────────────────────── */
+/* ── 名前入力行（sticky: スクロールしても常に最上部に固定） ─ */
 .cs-name-row {
+  position: sticky; top: 0; z-index: 10;
   display: flex; gap: 8px; align-items: center;
   padding: 8px 10px; border-radius: var(--r-sm);
-  border: 1.5px solid var(--c-border); background: var(--c-surface);
+  border: 1.5px solid var(--c-border-dk); background: var(--c-surface);
+  box-shadow: var(--sh-sm);
   transition: border-color .2s, background .2s, box-shadow .2s;
 }
 .cs-name-input {
@@ -595,18 +597,18 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
   font-family: var(--font-ui); color: var(--c-text); background: transparent;
   padding: 2px 4px;
 }
-.cs-name-input::placeholder { color: var(--c-text-3); }
+.cs-name-input::placeholder { color: var(--c-text-2); }
 
-/* draw 状態：入力行は控えめ、追加ボタンは無効 */
+/* draw 状態：入力行は白背景で常に視認できる */
 .canvas-section[data-cs-state="draw"] .cs-name-row {
-  background: var(--c-surface2); border-color: var(--c-border);
+  background: var(--c-surface); border-color: var(--c-border-dk);
 }
-.canvas-section[data-cs-state="draw"] .cs-name-input { color: var(--c-text-3); }
+.canvas-section[data-cs-state="draw"] .cs-name-input { color: var(--c-text-2); }
 
-/* name 状態：入力行をオレンジで強調 */
+/* name 状態：入力行をオレンジで強調 + 影を強める */
 .canvas-section[data-cs-state="name"] .cs-name-row {
   border-color: #FF6B00; background: #FFFBF5;
-  box-shadow: 0 0 0 3px rgba(255,107,0,.14);
+  box-shadow: 0 0 0 3px rgba(255,107,0,.18), var(--sh-sm);
 }
 .canvas-section[data-cs-state="name"] .cs-name-input { color: var(--c-text); }
 

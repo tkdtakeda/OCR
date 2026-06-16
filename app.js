@@ -225,7 +225,7 @@
     const img=_activeImgEl();
     if (img) { canvas.style.display='block'; ph.style.display='none'; redrawCanvas(); }
     else      { canvas.style.display='none';  ph.style.display='flex'; }
-    setTimeout(()=>section.scrollIntoView({behavior:'smooth',block:'nearest'}), 60);
+    setTimeout(()=>section.scrollIntoView({behavior:'smooth',block:'start'}), 60);
   }
 
   /* ── キャンバス状態管理（ステップ1:ドラッグ / ステップ2:名前入力） ── */
@@ -270,11 +270,20 @@
       ctx.setLineDash([4,3]); ctx.strokeRect(x1,y1,dw,dh); ctx.setLineDash([]);
       ctx.fillStyle='rgba(255,107,0,0.12)'; ctx.fillRect(x1,y1,dw,dh);
     } else if (_pendingRegion) {
-      // 確定済みだがフィールド名待ちの保留領域（テキストはステップガイドに任せる）
       const [rx,ry,rw,rh]=[_pendingRegion.dx*sc,_pendingRegion.dy*sc,_pendingRegion.w*sc,_pendingRegion.h*sc].map(Math.round);
       ctx.fillStyle='rgba(255,107,0,0.15)'; ctx.fillRect(rx,ry,rw,rh);
       ctx.strokeStyle='#FF6B00'; ctx.lineWidth=2.5;
       ctx.setLineDash([5,3]); ctx.strokeRect(rx,ry,rw,rh); ctx.setLineDash([]);
+      // 案内バナー（キャンバス上部）
+      const msg = '▲ 上の入力欄にフィールド名を入力 → 追加';
+      const fs = Math.max(10, Math.min(13, Math.round(c.width / 50)));
+      ctx.font = `bold ${fs}px sans-serif`;
+      const bw = ctx.measureText(msg).width + 20, bh = fs + 12;
+      const bx = Math.max(2, Math.round(c.width / 2 - bw / 2));
+      ctx.fillStyle = '#FF6B00'; ctx.fillRect(bx, 4, bw, bh);
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(msg, c.width / 2, 4 + bh / 2);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     }
   }
 
