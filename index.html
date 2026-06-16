@@ -303,7 +303,7 @@
         <div id="canvasSection" class="canvas-section hidden">
           <div class="canvas-instr">
             <i class="fas fa-pencil"></i>
-            <span id="canvasInstrText">フィールド名を入力し、画像上でドラッグして範囲を指定してください</span>
+            <span id="canvasInstrText">画像上でドラッグして範囲を指定し、フィールド名を入力して Enter で確定します</span>
           </div>
           <div class="layout-canvas-wrap" id="layoutCanvasWrap">
             <div id="canvasPlaceholder" class="canvas-placeholder">
@@ -311,7 +311,7 @@
             </div>
             <canvas id="layoutCanvas" style="display:none; cursor:crosshair;"></canvas>
           </div>
-          <input type="text" id="regName" class="form-input" placeholder="フィールド名（例：発注番号）を入力してからドラッグ" autocomplete="off">
+          <input type="text" id="regName" class="form-input" placeholder="フィールド名（例：発注番号）を入力して Enter で確定" autocomplete="off">
         </div>
         <!-- 登録済みフィールドリスト -->
         <div id="regionList" class="region-list">
@@ -355,8 +355,9 @@
         <li>チェックをオフにすると識別アンカーの位置がそのままOCR基準になります（簡易モード）</li></ul>
       </div>
       <div class="help-sec"><h3><i class="fas fa-pencil"></i> フィールド定義の操作</h3>
-        <ul><li>フィールド名を入力欄に入力してから、キャンバス上でドラッグして矩形を描きます</li>
-        <li>Enter キーでもドラッグ完了後にフィールドが追加されます</li>
+        <ul><li>キャンバス上でドラッグして矩形を描くと、オレンジ色の保留領域になります</li>
+        <li>フィールド名を入力欄に入力し、Enter キーまたは確定で領域が追加されます</li>
+        <li>フィールド名を先に入力してからドラッグした場合は、その場で即追加されます</li>
         <li>追加後はフィールド名がリセットされ、次のフィールドをすぐに定義できます</li></ul>
       </div>
       <div class="help-sec"><h3><i class="fas fa-ranking-star"></i> スコアの見方</h3>

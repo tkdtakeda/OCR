@@ -520,7 +520,7 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
    ════════════════════════════════════════════════════════ */
 
 /* ── テンプレートモーダル拡張 ───────────────────────── */
-.modal--tpl { width: 520px; }
+.modal--tpl { width: 640px; }
 
 /* アンカーブロック（識別・OCR共通の枠） */
 .anchor-block { border: 1px solid var(--c-border); border-radius: var(--r);
@@ -547,7 +547,7 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 .canvas-section { display: flex; flex-direction: column; gap: 6px; }
 .canvas-instr { display: flex; align-items: center; gap: 6px;
   font-size: .73rem; color: var(--c-pri); font-weight: 500; }
-.layout-canvas-wrap { height: 290px; overflow: auto; border: 1.5px solid var(--c-border-dk);
+.layout-canvas-wrap { height: 380px; overflow: auto; border: 1.5px solid var(--c-border-dk);
   border-radius: var(--r-sm); position: relative;
   background: repeating-conic-gradient(#dde5ef 0% 25%, transparent 0% 50%) 0 0 / 12px 12px; }
 .layout-canvas-wrap:has(canvas[style*="display: block"]) { cursor: crosshair; }

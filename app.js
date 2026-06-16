@@ -150,11 +150,15 @@
 
   /* ── Template Modal State ───────────────────────────── */
   const RCOLS=['#1D6BB0','#0F7D5E','#7C3AED','#B45309','#BE1818','#0E6E80'];
+  // キャンバス表示幅の目標値と最大拡大率（小さな画像も見やすく拡大、ぼやけ過ぎは抑制）
+  const CANVAS_W=560, CANVAS_MAX_SCALE=2.5;
+  function fitScale(natW) { return natW>0 ? Math.min(CANVAS_MAX_SCALE, CANVAS_W/natW) : 1; }
   let _identDataURL=null, _identNatW=0, _identNatH=0, _identImgEl=null, _identScale=1;
   let _useLayoutAnchor=false, _lastPasteTarget='ident';
   let _layoutDataURL=null, _layoutNatW=0, _layoutNatH=0, _layoutImgEl=null, _layoutScale=1;
   let _tplRegions=[];
   let _isDrawing=false, _ds={x:0,y:0}, _dc={x:0,y:0};
+  let _pendingRegion=null; // ドラッグで確定したがフィールド名未入力の保留領域 {dx,dy,w,h}
 
   function _activeImgEl() { return _useLayoutAnchor ? _layoutImgEl : _identImgEl; }
   function _activeScale()  { return _useLayoutAnchor ? _layoutScale  : _identScale;  }
@@ -162,7 +166,7 @@
   function openTplModal() {
     _identDataURL=null; _identNatW=0; _identNatH=0; _identImgEl=null; _identScale=1;
     _layoutDataURL=null; _layoutNatW=0; _layoutNatH=0; _layoutImgEl=null; _layoutScale=1;
-    _useLayoutAnchor=false; _lastPasteTarget='ident'; _tplRegions=[]; _isDrawing=false;
+    _useLayoutAnchor=false; _lastPasteTarget='ident'; _tplRegions=[]; _isDrawing=false; _pendingRegion=null;
     // ?. で全アクセスを保護（旧HTMLや要素未存在時のTypeErrorを防止）
     const fn=$('tplFormName'), an=$('tplIdentName'), rn=$('regName');
     if(fn)fn.value=''; if(an)an.value=''; if(rn)rn.value='';
@@ -184,7 +188,7 @@
     const url=URL.createObjectURL(blob), img=new Image();
     img.onload=()=>{
       _identImgEl=img; _identNatW=img.naturalWidth; _identNatH=img.naturalHeight;
-      _identScale=Math.min(1, 460/_identNatW);
+      _identScale=fitScale(_identNatW);
       const c=document.createElement('canvas'); c.width=_identNatW; c.height=_identNatH;
       c.getContext('2d').drawImage(img,0,0); _identDataURL=c.toDataURL('image/png');
       URL.revokeObjectURL(url);
@@ -200,7 +204,7 @@
     const url=URL.createObjectURL(blob), img=new Image();
     img.onload=()=>{
       _layoutImgEl=img; _layoutNatW=img.naturalWidth; _layoutNatH=img.naturalHeight;
-      _layoutScale=Math.min(1, 460/_layoutNatW);
+      _layoutScale=fitScale(_layoutNatW);
       const c=document.createElement('canvas'); c.width=_layoutNatW; c.height=_layoutNatH;
       c.getContext('2d').drawImage(img,0,0); _layoutDataURL=c.toDataURL('image/png');
       URL.revokeObjectURL(url);
@@ -249,18 +253,38 @@
       ctx.strokeStyle='#FF6B00'; ctx.lineWidth=2;
       ctx.setLineDash([4,3]); ctx.strokeRect(x1,y1,dw,dh); ctx.setLineDash([]);
       ctx.fillStyle='rgba(255,107,0,0.12)'; ctx.fillRect(x1,y1,dw,dh);
+    } else if (_pendingRegion) {
+      // 確定済みだがフィールド名待ちの保留領域
+      const [rx,ry,rw,rh]=[_pendingRegion.dx*sc,_pendingRegion.dy*sc,_pendingRegion.w*sc,_pendingRegion.h*sc].map(Math.round);
+      ctx.fillStyle='rgba(255,107,0,0.18)'; ctx.fillRect(rx,ry,rw,rh);
+      ctx.strokeStyle='#FF6B00'; ctx.lineWidth=2;
+      ctx.setLineDash([5,3]); ctx.strokeRect(rx,ry,rw,rh); ctx.setLineDash([]);
+      ctx.fillStyle='#FF6B00'; ctx.font='bold 10px sans-serif'; ctx.textBaseline='top';
+      ctx.fillText('フィールド名を入力 → Enter', rx+3, ry+2); ctx.textBaseline='alphabetic';
     }
   }
 
-  /* ── 矩形ドラッグ完了 → フィールド追加 ─────────────── */
+  /* ── 矩形ドラッグ完了 → 保留領域として確定 ─────────── */
   function finishDrawRegion() {
-    const name=$('regName').value.trim();
-    if (!name||!_activeImgEl()) return;
+    if (!_activeImgEl()) { _pendingRegion=null; return; }
     const sc=_activeScale();
     const [x1,y1]=[Math.min(_ds.x,_dc.x),Math.min(_ds.y,_dc.y)];
     const [dw,dh]=[Math.abs(_dc.x-_ds.x),Math.abs(_dc.y-_ds.y)];
-    if (dw<5||dh<5) { UIController.showToast('領域が小さすぎます。もう少し大きくドラッグしてください','warning'); redrawCanvas(); return; }
-    _tplRegions.push({ id:uid(), name, dx:Math.round(x1/sc), dy:Math.round(y1/sc), w:Math.round(dw/sc), h:Math.round(dh/sc) });
+    if (dw<5||dh<5) { _pendingRegion=null; redrawCanvas(); return; }
+    _pendingRegion={ dx:Math.round(x1/sc), dy:Math.round(y1/sc), w:Math.round(dw/sc), h:Math.round(dh/sc) };
+    redrawCanvas();
+    // フィールド名が既に入力済みなら即確定、未入力なら名前入力を促す
+    if ($('regName').value.trim()) commitPendingRegion();
+    else { UIController.showToast('フィールド名を入力して Enter キーで確定してください','info',2200); $('regName').focus(); }
+  }
+
+  /* ── 保留領域をフィールドとして確定 ────────────────── */
+  function commitPendingRegion() {
+    if (!_pendingRegion) { UIController.showToast('先に画像上でドラッグして範囲を指定してください','warning'); return; }
+    const name=$('regName').value.trim();
+    if (!name) { UIController.showToast('フィールド名を入力してください','warning'); $('regName').focus(); return; }
+    _tplRegions.push({ id:uid(), name, ..._pendingRegion });
+    _pendingRegion=null;
     UIController.renderRegionList(_tplRegions, removeRegionFromModal);
     redrawCanvas();
     $('regName').value=''; $('regName').focus();
@@ -536,7 +560,7 @@
       ldz.addEventListener('drop',e=>{e.preventDefault();ldz.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f?.type.startsWith('image/'))setLayoutImage(f);});
     }
     $('layoutFileInput')?.addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;setLayoutImage(f);e.target.value='';});
-    $('regName')?.addEventListener('keydown',e=>{if(e.key==='Enter'){/* ドラッグ待ち */}});
+    $('regName')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitPendingRegion();}});
 
     // Step 3
     $('paramPanel')?.addEventListener('input',debouncedLineRemoval);
