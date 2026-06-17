@@ -448,6 +448,8 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 .hidden { display: none !important; }
 @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(29,107,176,.6); } 50% { box-shadow: 0 0 0 8px rgba(29,107,176,0); } }
+.is-pulse { animation: pulse .9s ease 3; }
 
 /* ════════════════════════════════════════════════════════
    追加スタイル: 複数OCRフィールド対応
