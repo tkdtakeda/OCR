@@ -247,14 +247,12 @@
       <h2><i class="fas fa-plus"></i> テンプレート追加</h2>
       <button class="modal-close" id="closeTplModal"><i class="fas fa-xmark"></i></button>
     </div>
+    <!-- フォームエリア（スクロール可） -->
     <div class="modal-bdy">
-      <!-- 帳票名 -->
       <div class="form-group">
         <label class="form-label">帳票名 <span class="required">*</span></label>
         <input type="text" id="tplFormName" class="form-input" placeholder="例：発注書" autocomplete="off">
       </div>
-
-      <!-- 識別アンカー -->
       <div class="anchor-block">
         <div class="anchor-block-hdr">
           <span class="anchor-tag anchor-tag--id">ID</span>
@@ -270,25 +268,21 @@
             <i class="fas fa-image"></i>
             <p>Ctrl+V／ドロップ／クリック<br><small>帳票上の特徴的な部分（ロゴ・タイトル等）</small></p>
           </div>
-          <img id="identPreview" alt="" style="display:none; max-height:90px; max-width:100%; object-fit:contain;">
+          <img id="identPreview" alt="" style="display:none; max-height:160px; max-width:100%; object-fit:contain;">
         </div>
         <input type="file" id="identFileInput" accept="image/*" style="display:none">
       </div>
-
-      <!-- OCR読取フィールド定義 -->
       <div class="anchor-block">
         <div class="anchor-block-hdr">
           <span class="anchor-tag anchor-tag--ocr">OCR</span>
           OCR読取フィールド定義
-          <span class="anchor-desc">画像上でドラッグして範囲を指定</span>
+          <span class="anchor-desc">アンカー画像を読み込んでから描画します</span>
         </div>
-        <!-- レイアウトアンカー切替 -->
         <label class="layout-toggle">
           <input type="checkbox" id="useLayoutAnchor">
           <span class="ptoggle-track"></span>
           <span>識別とは別の参照画像を使用する（スキャンずれ補正に強い）</span>
         </label>
-        <!-- レイアウト画像アップロード -->
         <div id="layoutDropArea" class="hidden">
           <div class="modal-drop-zone modal-drop-zone--sm" id="layoutDropZone">
             <div id="layoutDropHint" class="drop-hint-inner">
@@ -299,26 +293,15 @@
           </div>
           <input type="file" id="layoutFileInput" accept="image/*" style="display:none">
         </div>
-        <!-- 描画キャンバス -->
-        <div id="canvasSection" class="canvas-section hidden">
-          <div class="canvas-instr">
-            <i class="fas fa-pencil"></i>
-            <span id="canvasInstrText">フィールド名を入力し、画像上でドラッグして範囲を指定してください</span>
-          </div>
-          <div class="layout-canvas-wrap" id="layoutCanvasWrap">
-            <div id="canvasPlaceholder" class="canvas-placeholder">
-              <i class="fas fa-image"></i><span>参照画像を読み込んでください</span>
-            </div>
-            <canvas id="layoutCanvas" style="display:none; cursor:crosshair;"></canvas>
-          </div>
-          <input type="text" id="regName" class="form-input" placeholder="フィールド名（例：発注番号）を入力してからドラッグ" autocomplete="off">
-        </div>
-        <!-- 登録済みフィールドリスト -->
-        <div id="regionList" class="region-list">
-          <div class="region-empty-hint">フィールドを追加してください（省略可）</div>
+        <div class="canvas-entry">
+          <button type="button" id="btnOpenCanvas" class="btn btn-primary btn-sm" disabled>
+            <i class="fas fa-pencil"></i> OCRフィールドを描画する
+          </button>
+          <span id="canvasSummary" class="canvas-summary-txt">識別アンカー画像を読み込んでください</span>
         </div>
       </div>
     </div>
+
     <div class="modal-ftr">
       <button id="btnTplCancel" class="btn btn-ghost">キャンセル</button>
       <button id="btnTplRegister" class="btn btn-primary"><i class="fas fa-check"></i> 登録</button>
@@ -355,9 +338,11 @@
         <li>チェックをオフにすると識別アンカーの位置がそのままOCR基準になります（簡易モード）</li></ul>
       </div>
       <div class="help-sec"><h3><i class="fas fa-pencil"></i> フィールド定義の操作</h3>
-        <ul><li>フィールド名を入力欄に入力してから、キャンバス上でドラッグして矩形を描きます</li>
-        <li>Enter キーでもドラッグ完了後にフィールドが追加されます</li>
-        <li>追加後はフィールド名がリセットされ、次のフィールドをすぐに定義できます</li></ul>
+        <ul>
+          <li>①キャンバス上でドラッグ → オレンジの保留枠が表示され、入力欄が強調されます</li>
+          <li>②フィールド名を入力して「追加」または Enter → 領域が確定され①に戻ります</li>
+          <li>名前を先に入力してからドラッグすることも可能（その場で即追加されます）</li>
+        </ul>
       </div>
       <div class="help-sec"><h3><i class="fas fa-ranking-star"></i> スコアの見方</h3>
         <ul><li><b>0.80以上</b>：高い一致（同一帳票の可能性大）</li>
@@ -365,6 +350,46 @@
         <li><b>0.50未満</b>：一致度が低い</li></ul>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- OCR描画オーバーレイ（フルスクリーン） -->
+<div id="canvasSection" class="canvas-section hidden" data-cs-state="draw">
+  <div class="cs-top-bar">
+    <div class="cs-top-row">
+      <div class="cs-steps">
+        <span class="cs-step" data-cs="draw"><span class="cs-step-badge">1</span>範囲をドラッグ</span>
+        <i class="fas fa-chevron-right cs-step-arr"></i>
+        <span class="cs-step" data-cs="name"><span class="cs-step-badge">2</span>名前を入力して追加</span>
+        <i class="fas fa-chevron-right cs-step-arr"></i>
+        <span class="cs-step cs-step-loop"><i class="fas fa-rotate"></i>繰り返し</span>
+      </div>
+      <button type="button" id="btnCloseCanvas" class="btn btn-primary btn-sm">
+        <i class="fas fa-check"></i> 完了（登録画面に戻る）
+      </button>
+    </div>
+    <div class="cs-name-row">
+      <input type="text" id="regName" class="cs-name-input"
+             placeholder="①でドラッグ後に名前を入力（先入力も可）" autocomplete="off">
+      <button type="button" id="btnAddRegion" class="btn btn-primary btn-sm" disabled>
+        <i class="fas fa-check"></i> 追加
+      </button>
+    </div>
+    <div class="canvas-zoom-bar">
+      <button type="button" id="btnZoomOut" class="btn btn-ghost btn-sm" title="縮小"><i class="fas fa-magnifying-glass-minus"></i></button>
+      <span id="zoomLabel" class="zoom-label">Auto</span>
+      <button type="button" id="btnZoomIn" class="btn btn-ghost btn-sm" title="拡大"><i class="fas fa-magnifying-glass-plus"></i></button>
+      <button type="button" id="btnZoomFit" class="btn btn-ghost btn-sm" title="フィット"><i class="fas fa-compress"></i></button>
+    </div>
+  </div>
+  <div class="layout-canvas-wrap" id="layoutCanvasWrap">
+    <div id="canvasPlaceholder" class="canvas-placeholder">
+      <i class="fas fa-image"></i><span>参照画像を読み込んでください</span>
+    </div>
+    <canvas id="layoutCanvas" style="display:none; cursor:crosshair;"></canvas>
+  </div>
+  <div id="regionList" class="region-list">
+    <div class="region-empty-hint">フィールドを追加してください（省略可）</div>
   </div>
 </div>
 

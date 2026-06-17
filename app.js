@@ -150,19 +150,34 @@
 
   /* ── Template Modal State ───────────────────────────── */
   const RCOLS=['#1D6BB0','#0F7D5E','#7C3AED','#B45309','#BE1818','#0E6E80'];
+  // 幅を基準に最大活用（小さい画像も 4x まで拡大して見やすく）
+  const CANVAS_W=580, CANVAS_MAX_SCALE=4.0;
+  function fitScale(natW) { return natW>0 ? Math.min(CANVAS_MAX_SCALE, CANVAS_W/natW) : 1; }
   let _identDataURL=null, _identNatW=0, _identNatH=0, _identImgEl=null, _identScale=1;
   let _useLayoutAnchor=false, _lastPasteTarget='ident';
   let _layoutDataURL=null, _layoutNatW=0, _layoutNatH=0, _layoutImgEl=null, _layoutScale=1;
   let _tplRegions=[];
   let _isDrawing=false, _ds={x:0,y:0}, _dc={x:0,y:0};
+  let _pendingRegion=null; // ドラッグで確定したがフィールド名未入力の保留領域 {dx,dy,w,h}
+  let _zoomFactor=1.0;    // ユーザー指定の追加倍率
 
   function _activeImgEl() { return _useLayoutAnchor ? _layoutImgEl : _identImgEl; }
-  function _activeScale()  { return _useLayoutAnchor ? _layoutScale  : _identScale;  }
+  function _activeScale()  { return (_useLayoutAnchor ? _layoutScale : _identScale) * _zoomFactor; }
+
+  function updateZoomLabel() {
+    const el=$('zoomLabel'); if(!el) return;
+    const sc=_activeScale();
+    el.textContent=`${Math.round(sc*100)}%`;
+  }
+  function zoomIn()  { _zoomFactor=Math.min(10,_zoomFactor*1.3); redrawCanvas(); updateZoomLabel(); }
+  function zoomOut() { _zoomFactor=Math.max(0.2,_zoomFactor/1.3); redrawCanvas(); updateZoomLabel(); }
+  function zoomFit() { _zoomFactor=1.0; redrawCanvas(); updateZoomLabel(); }
 
   function openTplModal() {
     _identDataURL=null; _identNatW=0; _identNatH=0; _identImgEl=null; _identScale=1;
     _layoutDataURL=null; _layoutNatW=0; _layoutNatH=0; _layoutImgEl=null; _layoutScale=1;
-    _useLayoutAnchor=false; _lastPasteTarget='ident'; _tplRegions=[]; _isDrawing=false;
+    _useLayoutAnchor=false; _lastPasteTarget='ident'; _tplRegions=[]; _isDrawing=false; _pendingRegion=null; _zoomFactor=1.0;
+    setCanvasState('draw');
     // ?. で全アクセスを保護（旧HTMLや要素未存在時のTypeErrorを防止）
     const fn=$('tplFormName'), an=$('tplIdentName'), rn=$('regName');
     if(fn)fn.value=''; if(an)an.value=''; if(rn)rn.value='';
@@ -176,6 +191,7 @@
     const cv=$('layoutCanvas'); if(cv){cv.style.display='none'; cv.width=0; cv.height=0;}
     const cp=$('canvasPlaceholder'); if(cp)cp.style.display='flex';
     UIController.renderRegionList(_tplRegions, removeRegionFromModal);
+    updateCanvasSummary();
     UIController.openModal('tplModal'); setTimeout(()=>$('tplFormName')?.focus(),60);
   }
 
@@ -184,7 +200,7 @@
     const url=URL.createObjectURL(blob), img=new Image();
     img.onload=()=>{
       _identImgEl=img; _identNatW=img.naturalWidth; _identNatH=img.naturalHeight;
-      _identScale=Math.min(1, 460/_identNatW);
+      _identScale=fitScale(_identNatW);
       const c=document.createElement('canvas'); c.width=_identNatW; c.height=_identNatH;
       c.getContext('2d').drawImage(img,0,0); _identDataURL=c.toDataURL('image/png');
       URL.revokeObjectURL(url);
@@ -200,7 +216,7 @@
     const url=URL.createObjectURL(blob), img=new Image();
     img.onload=()=>{
       _layoutImgEl=img; _layoutNatW=img.naturalWidth; _layoutNatH=img.naturalHeight;
-      _layoutScale=Math.min(1, 460/_layoutNatW);
+      _layoutScale=fitScale(_layoutNatW);
       const c=document.createElement('canvas'); c.width=_layoutNatW; c.height=_layoutNatH;
       c.getContext('2d').drawImage(img,0,0); _layoutDataURL=c.toDataURL('image/png');
       URL.revokeObjectURL(url);
@@ -211,14 +227,50 @@
     img.src=url;
   }
 
-  /* ── キャンバスセクション更新 ──────────────────────── */
-  function updateCanvasSection() {
-    const section=$('canvasSection'), canvas=$('layoutCanvas'), ph=$('canvasPlaceholder');
-    if (!section) return;
-    section.classList.remove('hidden');
+  /* ── キャンバスオーバーレイ管理 ────────────────────── */
+  function openCanvasOverlay() {
+    const sec=$('canvasSection'), canvas=$('layoutCanvas'), ph=$('canvasPlaceholder');
+    if (!sec) return;
+    sec.classList.remove('hidden');
     const img=_activeImgEl();
-    if (img) { canvas.style.display='block'; ph.style.display='none'; redrawCanvas(); }
+    if (img) { canvas.style.display='block'; ph.style.display='none'; redrawCanvas(); updateZoomLabel(); }
     else      { canvas.style.display='none';  ph.style.display='flex'; }
+  }
+  function closeCanvasOverlay() {
+    if (_pendingRegion && $('regName')?.value.trim()) commitPendingRegion();
+    else _pendingRegion=null;
+    $('canvasSection')?.classList.add('hidden');
+    setCanvasState('draw');
+    updateCanvasSummary();
+  }
+  function updateCanvasSummary() {
+    const btn=$('btnOpenCanvas'), txt=$('canvasSummary');
+    if (!btn) return;
+    const img=_activeImgEl();
+    btn.disabled=!img;
+    if (!txt) return;
+    if (!img) txt.textContent='識別アンカー画像を読み込んでください';
+    else if (_tplRegions.length===0) txt.textContent='ボタンを押してOCR範囲を描画してください';
+    else txt.textContent=`${_tplRegions.length}件のフィールドが設定済み — 変更する場合は再度押してください`;
+  }
+  function updateCanvasSection() {
+    _pendingRegion=null; _zoomFactor=1.0; setCanvasState('draw');
+    updateCanvasSummary();
+    if (_activeImgEl()) openCanvasOverlay();
+  }
+
+  /* ── キャンバス状態管理（ステップ1:ドラッグ / ステップ2:名前入力） ── */
+  function setCanvasState(state) {
+    const sec=$('canvasSection'); if(sec) sec.dataset.csState=state;
+    const inp=$('regName'), btn=$('btnAddRegion');
+    if (state==='name') {
+      if(inp) inp.placeholder='フィールド名を入力してください';
+      if(btn) btn.disabled=false;
+      setTimeout(()=>{ if(inp){inp.focus();} },30);
+    } else {
+      if(inp) inp.placeholder='①でドラッグ後に名前を入力（先入力も可）';
+      if(btn) btn.disabled=true;
+    }
   }
 
   /* ── レイアウトモード切替 ──────────────────────────── */
@@ -248,28 +300,57 @@
       ctx.strokeStyle='#FF6B00'; ctx.lineWidth=2;
       ctx.setLineDash([4,3]); ctx.strokeRect(x1,y1,dw,dh); ctx.setLineDash([]);
       ctx.fillStyle='rgba(255,107,0,0.12)'; ctx.fillRect(x1,y1,dw,dh);
+    } else if (_pendingRegion) {
+      const [rx,ry,rw,rh]=[_pendingRegion.dx*sc,_pendingRegion.dy*sc,_pendingRegion.w*sc,_pendingRegion.h*sc].map(Math.round);
+      ctx.fillStyle='rgba(255,107,0,0.15)'; ctx.fillRect(rx,ry,rw,rh);
+      ctx.strokeStyle='#FF6B00'; ctx.lineWidth=2.5;
+      ctx.setLineDash([5,3]); ctx.strokeRect(rx,ry,rw,rh); ctx.setLineDash([]);
+      // 案内バナー（キャンバス上部）
+      const msg = '▲ 上の入力欄にフィールド名を入力 → 追加';
+      const fs = Math.max(10, Math.min(13, Math.round(c.width / 50)));
+      ctx.font = `bold ${fs}px sans-serif`;
+      const bw = ctx.measureText(msg).width + 20, bh = fs + 12;
+      const bx = Math.max(2, Math.round(c.width / 2 - bw / 2));
+      ctx.fillStyle = '#FF6B00'; ctx.fillRect(bx, 4, bw, bh);
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(msg, c.width / 2, 4 + bh / 2);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     }
   }
 
-  /* ── 矩形ドラッグ完了 → フィールド追加 ─────────────── */
+  /* ── 矩形ドラッグ完了 → 保留領域として確定 ─────────── */
   function finishDrawRegion() {
-    const name=$('regName').value.trim();
-    if (!name||!_activeImgEl()) return;
+    if (!_activeImgEl()) { _pendingRegion=null; return; }
     const sc=_activeScale();
     const [x1,y1]=[Math.min(_ds.x,_dc.x),Math.min(_ds.y,_dc.y)];
     const [dw,dh]=[Math.abs(_dc.x-_ds.x),Math.abs(_dc.y-_ds.y)];
-    if (dw<5||dh<5) { UIController.showToast('領域が小さすぎます。もう少し大きくドラッグしてください','warning'); redrawCanvas(); return; }
-    _tplRegions.push({ id:uid(), name, dx:Math.round(x1/sc), dy:Math.round(y1/sc), w:Math.round(dw/sc), h:Math.round(dh/sc) });
+    if (dw<5||dh<5) { _pendingRegion=null; redrawCanvas(); return; }
+    _pendingRegion={ dx:Math.round(x1/sc), dy:Math.round(y1/sc), w:Math.round(dw/sc), h:Math.round(dh/sc) };
+    redrawCanvas();
+    // フィールド名が既に入力済みなら即確定、未入力ならステップ2へ
+    if ($('regName').value.trim()) commitPendingRegion();
+    else setCanvasState('name');
+  }
+
+  /* ── 保留領域をフィールドとして確定 ────────────────── */
+  function commitPendingRegion() {
+    if (!_pendingRegion) { UIController.showToast('先に画像上でドラッグして範囲を指定してください','warning'); return; }
+    const name=$('regName').value.trim();
+    if (!name) { UIController.showToast('フィールド名を入力してください','warning'); $('regName').focus(); return; }
+    _tplRegions.push({ id:uid(), name, ..._pendingRegion });
+    _pendingRegion=null;
     UIController.renderRegionList(_tplRegions, removeRegionFromModal);
     redrawCanvas();
-    $('regName').value=''; $('regName').focus();
-    UIController.showToast(`「${name}」を追加しました`,'success',1400);
+    $('regName').value='';
+    setCanvasState('draw');
+    updateCanvasSummary();
+    UIController.showToast(`「${name}」を追加しました ― 次の範囲をドラッグしてください`,'success',2000);
   }
 
   function removeRegionFromModal(id) {
     _tplRegions=_tplRegions.filter(r=>r.id!==id);
     UIController.renderRegionList(_tplRegions, removeRegionFromModal);
-    redrawCanvas();
+    redrawCanvas(); updateCanvasSummary();
   }
 
   /* ── キャンバスイベント初期化（init時に1回のみ） ──── */
@@ -281,7 +362,8 @@
     });
     c.addEventListener('mousemove', e=>{ if (!_isDrawing) return; _dc={x:e.offsetX,y:e.offsetY}; redrawCanvas(); });
     c.addEventListener('mouseup',   e=>{ if (!_isDrawing) return; _dc={x:e.offsetX,y:e.offsetY}; _isDrawing=false; finishDrawRegion(); });
-    c.addEventListener('mouseleave',()=>{ if (_isDrawing) { _isDrawing=false; redrawCanvas(); } });
+    // キャンバス外でマウスを離しても矩形を確定（キャンセルしない）
+    c.addEventListener('mouseleave',()=>{ if (_isDrawing) { _isDrawing=false; finishDrawRegion(); } });
   }
 
   /* ── テンプレート登録 ───────────────────────────────── */
@@ -294,6 +376,7 @@
     const layoutAnchor=(_useLayoutAnchor&&_layoutDataURL)
       ? { name:'レイアウト参照', dataURL:_layoutDataURL, natW:_layoutNatW, natH:_layoutNatH }
       : null;
+    closeCanvasOverlay();
     addTemplate(fn, identAnchor, layoutAnchor, [..._tplRegions], false);
     UIController.closeModal('tplModal');
     UIController.showToast(`「${fn} / ${an}」を登録しました（${_tplRegions.length}フィールド）`,'success');
@@ -511,8 +594,10 @@
     $('angleStep')?.addEventListener('change',e=>{ state.matchSettings.angleStep=Math.max(0.5,parseFloat(e.target.value)||1); });
 
     // Template modal
-    $('closeTplModal')?.addEventListener('click',()=>UIController.closeModal('tplModal'));
-    $('btnTplCancel')?.addEventListener('click',()=>UIController.closeModal('tplModal'));
+    $('closeTplModal')?.addEventListener('click',()=>{ closeCanvasOverlay(); UIController.closeModal('tplModal'); });
+    $('btnTplCancel')?.addEventListener('click',()=>{ closeCanvasOverlay(); UIController.closeModal('tplModal'); });
+    $('btnOpenCanvas')?.addEventListener('click',openCanvasOverlay);
+    $('btnCloseCanvas')?.addEventListener('click',closeCanvasOverlay);
     $('btnTplRegister')?.addEventListener('click',registerTemplate);
     $('tplFormName')?.addEventListener('keydown',e=>{if(e.key==='Enter')$('tplIdentName').focus();});
     $('tplIdentName')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&_identDataURL)$('regName').focus();});
@@ -535,7 +620,11 @@
       ldz.addEventListener('drop',e=>{e.preventDefault();ldz.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f?.type.startsWith('image/'))setLayoutImage(f);});
     }
     $('layoutFileInput')?.addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;setLayoutImage(f);e.target.value='';});
-    $('regName')?.addEventListener('keydown',e=>{if(e.key==='Enter'){/* ドラッグ待ち */}});
+    $('regName')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitPendingRegion();}});
+    $('btnAddRegion')?.addEventListener('click',commitPendingRegion);
+    $('btnZoomIn')?.addEventListener('click',zoomIn);
+    $('btnZoomOut')?.addEventListener('click',zoomOut);
+    $('btnZoomFit')?.addEventListener('click',zoomFit);
 
     // Step 3
     $('paramPanel')?.addEventListener('input',debouncedLineRemoval);

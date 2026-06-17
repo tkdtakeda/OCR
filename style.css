@@ -158,7 +158,7 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 .drop-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 
 /* Step 1 Preview */
-.step1-preview { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.step1-preview { flex: 1; display: flex; flex-direction: column; overflow: hidden; align-self: stretch; }
 .preview-hdr { display: flex; align-items: center; justify-content: space-between;
   padding: 8px 12px; background: var(--c-surface); border-bottom: 1px solid var(--c-border); flex-shrink: 0; }
 .preview-title { display: flex; align-items: center; gap: 8px; font-weight: 600;
@@ -455,9 +455,11 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 
 /* ── テンプレートモーダル: フィールドリスト ─────────── */
 .region-list {
-  border: 1px solid var(--c-border); border-radius: var(--r-sm);
-  min-height: 48px; padding: 4px; background: var(--c-surface2);
-  display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px;
+  border-top: 1px solid var(--c-border);
+  max-height: 120px; min-height: 32px; flex-shrink: 0;
+  padding: 4px 12px; background: var(--c-surface2);
+  display: flex; flex-direction: column; gap: 3px;
+  overflow-y: auto;
 }
 .region-empty-hint { font-size: .75rem; color: var(--c-text-3);
   text-align: center; padding: 10px 0; }
@@ -519,8 +521,9 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
    追加スタイル: 識別/レイアウトアンカー分離 + キャンバス描画
    ════════════════════════════════════════════════════════ */
 
-/* ── テンプレートモーダル拡張 ───────────────────────── */
-.modal--tpl { width: 520px; }
+/* テンプレートモーダル */
+.modal--tpl { width: 640px; }
+.modal--tpl .modal-bdy { overflow-y: auto; }
 
 /* アンカーブロック（識別・OCR共通の枠） */
 .anchor-block { border: 1px solid var(--c-border); border-radius: var(--r);
@@ -535,7 +538,7 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 .anchor-desc { font-size: .7rem; font-weight: 400; color: var(--c-text-3); margin-left: auto; }
 
 /* 小さなドロップゾーン（識別・レイアウト画像用） */
-.modal-drop-zone--sm { min-height: 80px; }
+.modal-drop-zone--sm { min-height: 110px; }
 
 /* レイアウトアンカー切替トグル */
 .layout-toggle { display: flex; align-items: center; gap: 10px; font-size: .78rem;
@@ -543,18 +546,125 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 .layout-toggle input { opacity: 0; position: absolute; pointer-events: none; }
 .layout-toggle .ptoggle-track { flex-shrink: 0; }
 
-/* 描画キャンバスセクション */
-.canvas-section { display: flex; flex-direction: column; gap: 6px; }
-.canvas-instr { display: flex; align-items: center; gap: 6px;
-  font-size: .73rem; color: var(--c-pri); font-weight: 500; }
-.layout-canvas-wrap { height: 290px; overflow: auto; border: 1.5px solid var(--c-border-dk);
-  border-radius: var(--r-sm); position: relative;
-  background: repeating-conic-gradient(#dde5ef 0% 25%, transparent 0% 50%) 0 0 / 12px 12px; }
+/* OCR描画オーバーレイ（フルスクリーン、モーダルの上に表示） */
+.canvas-section {
+  position: fixed; inset: 0; z-index: 500;
+  background: var(--c-surface);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+/* cs-top-bar: ステップガイド＋入力欄＋ズームをまとめたツールバー */
+.cs-top-bar {
+  flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 10px 16px 8px;
+  background: var(--c-surface);
+  border-bottom: 2px solid var(--c-border-dk);
+  box-shadow: var(--sh-sm);
+}
+.cs-top-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.cs-top-row .cs-steps { flex: 1; min-width: 0; }
+
+/* ── ステップガイド ──────────────────────────────────── */
+.cs-steps {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  font-size: .74rem; padding: 6px 10px;
+  background: var(--c-surface2); border-radius: var(--r-sm);
+  border: 1px solid var(--c-border);
+}
+.cs-step {
+  display: flex; align-items: center; gap: 5px;
+  color: var(--c-text-3); padding: 3px 8px; border-radius: 20px;
+  white-space: nowrap; transition: background .15s, color .15s;
+}
+.cs-step-badge {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--c-border-dk); color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: .6rem; font-weight: 700; flex-shrink: 0;
+  transition: background .15s;
+}
+.cs-step-arr { color: var(--c-border-dk); font-size: .6rem; flex-shrink: 0; }
+.cs-step-loop { gap: 5px; }
+
+/* ステップ1 アクティブ */
+.canvas-section[data-cs-state="draw"] .cs-step[data-cs="draw"] {
+  background: var(--c-pri-lt); color: var(--c-pri); font-weight: 700;
+}
+.canvas-section[data-cs-state="draw"] .cs-step[data-cs="draw"] .cs-step-badge {
+  background: var(--c-pri);
+}
+/* ステップ2 アクティブ */
+.canvas-section[data-cs-state="name"] .cs-step[data-cs="name"] {
+  background: #FFF3E6; color: #C25200; font-weight: 700;
+}
+.canvas-section[data-cs-state="name"] .cs-step[data-cs="name"] .cs-step-badge {
+  background: #FF6B00;
+}
+
+/* ── 名前入力行（cs-top-bar内の常時表示エリア） ─────────── */
+.cs-name-row {
+  display: flex; gap: 8px; align-items: center;
+  padding: 6px 8px; border-radius: var(--r-sm);
+  border: 1.5px solid var(--c-border-dk); background: var(--c-surface);
+  box-shadow: var(--sh-xs);
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.cs-name-input {
+  flex: 1; border: none; outline: none; font-size: .85rem;
+  font-family: var(--font-ui); color: var(--c-text); background: transparent;
+  padding: 2px 4px;
+}
+.cs-name-input::placeholder { color: var(--c-text-2); }
+
+/* draw 状態：入力行は白背景で常に視認できる */
+.canvas-section[data-cs-state="draw"] .cs-name-row {
+  background: var(--c-surface); border-color: var(--c-border-dk);
+}
+.canvas-section[data-cs-state="draw"] .cs-name-input { color: var(--c-text-2); }
+
+/* name 状態：入力行をオレンジで強調 + 影を強める */
+.canvas-section[data-cs-state="name"] .cs-name-row {
+  border-color: #FF6B00; background: #FFFBF5;
+  box-shadow: 0 0 0 3px rgba(255,107,0,.18), var(--sh-sm);
+}
+.canvas-section[data-cs-state="name"] .cs-name-input { color: var(--c-text); }
+
+/* ── ズームコントロールバー ──────────────────────────── */
+.canvas-zoom-bar { display: flex; align-items: center; gap: 4px; }
+.zoom-label {
+  font-family: var(--font-mono); font-size: .73rem; color: var(--c-text-2);
+  background: var(--c-surface2); border: 1px solid var(--c-border);
+  border-radius: var(--r-sm); padding: 2px 7px; min-width: 48px; text-align: center;
+}
+
+/* ── キャンバスラッパー（残り高さを全て使う） ─────────── */
+.layout-canvas-wrap {
+  flex: 1; min-height: 0; overflow: auto;
+  position: relative;
+  background: repeating-conic-gradient(#dde5ef 0% 25%, transparent 0% 50%) 0 0 / 12px 12px;
+  display: flex; align-items: flex-start; justify-content: center;
+}
 .layout-canvas-wrap:has(canvas[style*="display: block"]) { cursor: crosshair; }
-.canvas-placeholder { display: flex; flex-direction: column; align-items: center;
-  justify-content: center; height: 100%; gap: 8px; color: var(--c-text-3); font-size: .8rem; }
+.canvas-placeholder {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; width: 100%; min-height: 100%;
+  gap: 8px; color: var(--c-text-3); font-size: .8rem;
+}
 .canvas-placeholder i { font-size: 2rem; }
 #layoutCanvas { display: block; }
 
 /* Step4: OCR info panel の新フィールド */
 #infoLayoutName { font-size: .72rem; }
+
+/* テンプレートモーダル：OCRフィールド描画起動エリア */
+.canvas-entry {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: var(--r-sm);
+  background: var(--c-surface2); border: 1px solid var(--c-border);
+}
+.canvas-summary-txt {
+  flex: 1; font-size: .75rem; color: var(--c-text-3); line-height: 1.4;
+}
