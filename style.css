@@ -456,7 +456,7 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 /* ── テンプレートモーダル: フィールドリスト ─────────── */
 .region-list {
   border-top: 1px solid var(--c-border);
-  max-height: 90px; min-height: 32px; flex-shrink: 0;
+  max-height: 120px; min-height: 32px; flex-shrink: 0;
   padding: 4px 12px; background: var(--c-surface2);
   display: flex; flex-direction: column; gap: 3px;
   overflow-y: auto;
@@ -521,16 +521,9 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
    追加スタイル: 識別/レイアウトアンカー分離 + キャンバス描画
    ════════════════════════════════════════════════════════ */
 
-/* テンプレートモーダル：上段フォーム＋下段キャンバスの2段レイアウト */
-.modal--tpl { width: 640px; height: 86vh; }
-
-/* 上段フォームエリア：コンテンツ分だけ高さを取り、溢れたらスクロール */
-.modal--tpl .modal-bdy {
-  flex: 0 1 auto;
-  max-height: 38vh;
-  min-height: 60px;
-  overflow-y: auto;
-}
+/* テンプレートモーダル */
+.modal--tpl { width: 640px; }
+.modal--tpl .modal-bdy { overflow-y: auto; }
 
 /* アンカーブロック（識別・OCR共通の枠） */
 .anchor-block { border: 1px solid var(--c-border); border-radius: var(--r);
@@ -553,21 +546,26 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 .layout-toggle input { opacity: 0; position: absolute; pointer-events: none; }
 .layout-toggle .ptoggle-track { flex-shrink: 0; }
 
-/* 下段キャンバスセクション：モーダルflexの残り領域をすべて使う */
+/* OCR描画オーバーレイ（フルスクリーン、モーダルの上に表示） */
 .canvas-section {
-  flex: 1 0 0;
-  display: flex; flex-direction: column; gap: 0;
-  border-top: 1.5px solid var(--c-border);
-  overflow: hidden; min-height: 0;
+  position: fixed; inset: 0; z-index: 500;
+  background: var(--c-surface);
+  display: flex; flex-direction: column;
+  overflow: hidden;
 }
 /* cs-top-bar: ステップガイド＋入力欄＋ズームをまとめたツールバー */
 .cs-top-bar {
   flex-shrink: 0;
   display: flex; flex-direction: column; gap: 6px;
-  padding: 8px 12px 6px;
+  padding: 10px 16px 8px;
   background: var(--c-surface);
-  border-bottom: 1px solid var(--c-border);
+  border-bottom: 2px solid var(--c-border-dk);
+  box-shadow: var(--sh-sm);
 }
+.cs-top-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.cs-top-row .cs-steps { flex: 1; min-width: 0; }
 
 /* ── ステップガイド ──────────────────────────────────── */
 .cs-steps {
@@ -644,8 +642,7 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 
 /* ── キャンバスラッパー（残り高さを全て使う） ─────────── */
 .layout-canvas-wrap {
-  flex: 1; min-height: 120px; overflow: auto;
-  border: none; border-top: 1.5px solid var(--c-border-dk);
+  flex: 1; min-height: 0; overflow: auto;
   position: relative;
   background: repeating-conic-gradient(#dde5ef 0% 25%, transparent 0% 50%) 0 0 / 12px 12px;
   display: flex; align-items: flex-start; justify-content: center;
@@ -661,3 +658,13 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 
 /* Step4: OCR info panel の新フィールド */
 #infoLayoutName { font-size: .72rem; }
+
+/* テンプレートモーダル：OCRフィールド描画起動エリア */
+.canvas-entry {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: var(--r-sm);
+  background: var(--c-surface2); border: 1px solid var(--c-border);
+}
+.canvas-summary-txt {
+  flex: 1; font-size: .75rem; color: var(--c-text-3); line-height: 1.4;
+}

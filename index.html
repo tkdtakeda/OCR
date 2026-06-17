@@ -276,7 +276,7 @@
         <div class="anchor-block-hdr">
           <span class="anchor-tag anchor-tag--ocr">OCR</span>
           OCR読取フィールド定義
-          <span class="anchor-desc">画像をロードすると下段に描画欄が表示されます</span>
+          <span class="anchor-desc">アンカー画像を読み込んでから描画します</span>
         </div>
         <label class="layout-toggle">
           <input type="checkbox" id="useLayoutAnchor">
@@ -293,46 +293,12 @@
           </div>
           <input type="file" id="layoutFileInput" accept="image/*" style="display:none">
         </div>
-      </div>
-    </div>
-
-    <!-- OCR描画エリア（modal-bdyの外・フッターの上に固定） -->
-    <div id="canvasSection" class="canvas-section hidden" data-cs-state="draw">
-      <div class="cs-top-bar">
-        <!-- ステップガイド -->
-        <div class="cs-steps">
-          <span class="cs-step" data-cs="draw"><span class="cs-step-badge">1</span>範囲をドラッグ</span>
-          <i class="fas fa-chevron-right cs-step-arr"></i>
-          <span class="cs-step" data-cs="name"><span class="cs-step-badge">2</span>名前を入力して追加</span>
-          <i class="fas fa-chevron-right cs-step-arr"></i>
-          <span class="cs-step cs-step-loop"><i class="fas fa-rotate"></i>繰り返し</span>
-        </div>
-        <!-- 名前入力行 -->
-        <div class="cs-name-row">
-          <input type="text" id="regName" class="cs-name-input"
-                 placeholder="①でドラッグ後に名前を入力（先入力も可）" autocomplete="off">
-          <button type="button" id="btnAddRegion" class="btn btn-primary btn-sm" disabled>
-            <i class="fas fa-check"></i> 追加
+        <div class="canvas-entry">
+          <button type="button" id="btnOpenCanvas" class="btn btn-primary btn-sm" disabled>
+            <i class="fas fa-pencil"></i> OCRフィールドを描画する
           </button>
+          <span id="canvasSummary" class="canvas-summary-txt">識別アンカー画像を読み込んでください</span>
         </div>
-        <!-- ズームコントロール -->
-        <div class="canvas-zoom-bar">
-          <button type="button" id="btnZoomOut" class="btn btn-ghost btn-sm" title="縮小"><i class="fas fa-magnifying-glass-minus"></i></button>
-          <span id="zoomLabel" class="zoom-label">Auto</span>
-          <button type="button" id="btnZoomIn" class="btn btn-ghost btn-sm" title="拡大"><i class="fas fa-magnifying-glass-plus"></i></button>
-          <button type="button" id="btnZoomFit" class="btn btn-ghost btn-sm" title="フィット"><i class="fas fa-compress"></i></button>
-        </div>
-      </div>
-      <!-- キャンバス -->
-      <div class="layout-canvas-wrap" id="layoutCanvasWrap">
-        <div id="canvasPlaceholder" class="canvas-placeholder">
-          <i class="fas fa-image"></i><span>参照画像を読み込んでください</span>
-        </div>
-        <canvas id="layoutCanvas" style="display:none; cursor:crosshair;"></canvas>
-      </div>
-      <!-- 登録済みフィールドリスト -->
-      <div id="regionList" class="region-list">
-        <div class="region-empty-hint">フィールドを追加してください（省略可）</div>
       </div>
     </div>
 
@@ -384,6 +350,46 @@
         <li><b>0.50未満</b>：一致度が低い</li></ul>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- OCR描画オーバーレイ（フルスクリーン） -->
+<div id="canvasSection" class="canvas-section hidden" data-cs-state="draw">
+  <div class="cs-top-bar">
+    <div class="cs-top-row">
+      <div class="cs-steps">
+        <span class="cs-step" data-cs="draw"><span class="cs-step-badge">1</span>範囲をドラッグ</span>
+        <i class="fas fa-chevron-right cs-step-arr"></i>
+        <span class="cs-step" data-cs="name"><span class="cs-step-badge">2</span>名前を入力して追加</span>
+        <i class="fas fa-chevron-right cs-step-arr"></i>
+        <span class="cs-step cs-step-loop"><i class="fas fa-rotate"></i>繰り返し</span>
+      </div>
+      <button type="button" id="btnCloseCanvas" class="btn btn-primary btn-sm">
+        <i class="fas fa-check"></i> 完了（登録画面に戻る）
+      </button>
+    </div>
+    <div class="cs-name-row">
+      <input type="text" id="regName" class="cs-name-input"
+             placeholder="①でドラッグ後に名前を入力（先入力も可）" autocomplete="off">
+      <button type="button" id="btnAddRegion" class="btn btn-primary btn-sm" disabled>
+        <i class="fas fa-check"></i> 追加
+      </button>
+    </div>
+    <div class="canvas-zoom-bar">
+      <button type="button" id="btnZoomOut" class="btn btn-ghost btn-sm" title="縮小"><i class="fas fa-magnifying-glass-minus"></i></button>
+      <span id="zoomLabel" class="zoom-label">Auto</span>
+      <button type="button" id="btnZoomIn" class="btn btn-ghost btn-sm" title="拡大"><i class="fas fa-magnifying-glass-plus"></i></button>
+      <button type="button" id="btnZoomFit" class="btn btn-ghost btn-sm" title="フィット"><i class="fas fa-compress"></i></button>
+    </div>
+  </div>
+  <div class="layout-canvas-wrap" id="layoutCanvasWrap">
+    <div id="canvasPlaceholder" class="canvas-placeholder">
+      <i class="fas fa-image"></i><span>参照画像を読み込んでください</span>
+    </div>
+    <canvas id="layoutCanvas" style="display:none; cursor:crosshair;"></canvas>
+  </div>
+  <div id="regionList" class="region-list">
+    <div class="region-empty-hint">フィールドを追加してください（省略可）</div>
   </div>
 </div>
 
