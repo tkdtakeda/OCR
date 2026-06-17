@@ -159,14 +159,24 @@
   let _tplRegions=[];
   let _isDrawing=false, _ds={x:0,y:0}, _dc={x:0,y:0};
   let _pendingRegion=null; // ドラッグで確定したがフィールド名未入力の保留領域 {dx,dy,w,h}
+  let _zoomFactor=1.0;    // ユーザー指定の追加倍率
 
   function _activeImgEl() { return _useLayoutAnchor ? _layoutImgEl : _identImgEl; }
-  function _activeScale()  { return _useLayoutAnchor ? _layoutScale  : _identScale;  }
+  function _activeScale()  { return (_useLayoutAnchor ? _layoutScale : _identScale) * _zoomFactor; }
+
+  function updateZoomLabel() {
+    const el=$('zoomLabel'); if(!el) return;
+    const sc=_activeScale();
+    el.textContent=`${Math.round(sc*100)}%`;
+  }
+  function zoomIn()  { _zoomFactor=Math.min(10,_zoomFactor*1.3); redrawCanvas(); updateZoomLabel(); }
+  function zoomOut() { _zoomFactor=Math.max(0.2,_zoomFactor/1.3); redrawCanvas(); updateZoomLabel(); }
+  function zoomFit() { _zoomFactor=1.0; redrawCanvas(); updateZoomLabel(); }
 
   function openTplModal() {
     _identDataURL=null; _identNatW=0; _identNatH=0; _identImgEl=null; _identScale=1;
     _layoutDataURL=null; _layoutNatW=0; _layoutNatH=0; _layoutImgEl=null; _layoutScale=1;
-    _useLayoutAnchor=false; _lastPasteTarget='ident'; _tplRegions=[]; _isDrawing=false; _pendingRegion=null;
+    _useLayoutAnchor=false; _lastPasteTarget='ident'; _tplRegions=[]; _isDrawing=false; _pendingRegion=null; _zoomFactor=1.0;
     setCanvasState('draw');
     // ?. で全アクセスを保護（旧HTMLや要素未存在時のTypeErrorを防止）
     const fn=$('tplFormName'), an=$('tplIdentName'), rn=$('regName');
@@ -221,9 +231,9 @@
     const section=$('canvasSection'), canvas=$('layoutCanvas'), ph=$('canvasPlaceholder');
     if (!section) return;
     section.classList.remove('hidden');
-    _pendingRegion=null; setCanvasState('draw');
+    _pendingRegion=null; _zoomFactor=1.0; setCanvasState('draw');
     const img=_activeImgEl();
-    if (img) { canvas.style.display='block'; ph.style.display='none'; redrawCanvas(); }
+    if (img) { canvas.style.display='block'; ph.style.display='none'; redrawCanvas(); updateZoomLabel(); }
     else      { canvas.style.display='none';  ph.style.display='flex'; }
     setTimeout(()=>section.scrollIntoView({behavior:'smooth',block:'start'}), 60);
   }
@@ -330,7 +340,8 @@
     });
     c.addEventListener('mousemove', e=>{ if (!_isDrawing) return; _dc={x:e.offsetX,y:e.offsetY}; redrawCanvas(); });
     c.addEventListener('mouseup',   e=>{ if (!_isDrawing) return; _dc={x:e.offsetX,y:e.offsetY}; _isDrawing=false; finishDrawRegion(); });
-    c.addEventListener('mouseleave',()=>{ if (_isDrawing) { _isDrawing=false; redrawCanvas(); } });
+    // キャンバス外でマウスを離しても矩形を確定（キャンセルしない）
+    c.addEventListener('mouseleave',()=>{ if (_isDrawing) { _isDrawing=false; finishDrawRegion(); } });
   }
 
   /* ── テンプレート登録 ───────────────────────────────── */
@@ -586,6 +597,9 @@
     $('layoutFileInput')?.addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;setLayoutImage(f);e.target.value='';});
     $('regName')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitPendingRegion();}});
     $('btnAddRegion')?.addEventListener('click',commitPendingRegion);
+    $('btnZoomIn')?.addEventListener('click',zoomIn);
+    $('btnZoomOut')?.addEventListener('click',zoomOut);
+    $('btnZoomFit')?.addEventListener('click',zoomFit);
 
     // Step 3
     $('paramPanel')?.addEventListener('input',debouncedLineRemoval);

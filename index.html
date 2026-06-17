@@ -317,6 +317,14 @@
               <i class="fas fa-check"></i> 追加
             </button>
           </div>
+          <!-- ズームコントロール -->
+          <div class="canvas-zoom-bar">
+            <button type="button" id="btnZoomOut" class="btn btn-ghost btn-sm" title="縮小"><i class="fas fa-magnifying-glass-minus"></i></button>
+            <span id="zoomLabel" class="zoom-label">Auto</span>
+            <button type="button" id="btnZoomIn" class="btn btn-ghost btn-sm" title="拡大"><i class="fas fa-magnifying-glass-plus"></i></button>
+            <button type="button" id="btnZoomFit" class="btn btn-ghost btn-sm" title="フィットに戻す"><i class="fas fa-compress"></i></button>
+            <span class="zoom-resize-hint"><i class="fas fa-arrows-up-down"></i> 下端をドラッグで縦サイズ変更</span>
+          </div>
           <!-- キャンバス -->
           <div class="layout-canvas-wrap" id="layoutCanvasWrap">
             <div id="canvasPlaceholder" class="canvas-placeholder">

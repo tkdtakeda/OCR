@@ -276,7 +276,10 @@ const UIController = (() => {
 
   /* ── Modals ─────────────────────────────────────────── */
   function initModals() {
-    document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.add('hidden');}));
+    document.querySelectorAll('.modal-overlay').forEach(o=>{
+      if (o.id === 'tplModal') return; // テンプレートモーダルは誤操作で閉じないよう除外
+      o.addEventListener('click',e=>{if(e.target===o)o.classList.add('hidden');});
+    });
     document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m=>m.classList.add('hidden')); });
   }
   function openModal(id)  { document.getElementById(id)?.classList.remove('hidden'); }
