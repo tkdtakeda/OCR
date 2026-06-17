@@ -668,3 +668,13 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 .canvas-summary-txt {
   flex: 1; font-size: .75rem; color: var(--c-text-3); line-height: 1.4;
 }
+
+/* テンプレートモーダル フッター */
+.tpl-ftr { flex-direction: column; align-items: stretch; gap: 6px; }
+.tpl-ftr-hint {
+  font-size: .73rem; color: var(--c-text-3); text-align: center;
+}
+.tpl-ftr .btn-register {
+  padding: 8px 16px; font-size: .9rem; font-weight: 700; justify-content: center;
+  box-shadow: var(--sh-sm);
+}

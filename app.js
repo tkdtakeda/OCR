@@ -242,6 +242,15 @@
     $('canvasSection')?.classList.add('hidden');
     setCanvasState('draw');
     updateCanvasSummary();
+    // テンプレートモーダルを確実に前面に表示
+    $('tplModal')?.classList.remove('hidden');
+    const n=_tplRegions.length;
+    UIController.showToast(
+      n>0
+        ? `${n}件のフィールドを設定しました。帳票名を確認して「登録」を押してください`
+        : '帳票名・アンカー名を確認して「登録」を押してください',
+      'info', 4000
+    );
   }
   function updateCanvasSummary() {
     const btn=$('btnOpenCanvas'), txt=$('canvasSummary');
