@@ -189,7 +189,7 @@
     const ua=$('useLayoutAnchor'); if(ua)ua.checked=false;
     const lp=$('layoutPreview'), lh=$('layoutDropHint');
     if(lp){lp.src=''; lp.style.display='none';} if(lh)lh.style.display='flex';
-    $('canvasSection')?.classList.add('hidden');
+    const _cs=$('canvasSection'); if(_cs)_cs.style.display='none';
     const cv=$('layoutCanvas'); if(cv){cv.style.display='none'; cv.width=0; cv.height=0;}
     const cp=$('canvasPlaceholder'); if(cp)cp.style.display='flex';
     UIController.renderRegionList(_tplRegions, removeRegionFromModal);
@@ -233,7 +233,7 @@
   function openCanvasOverlay() {
     const sec=$('canvasSection'), canvas=$('layoutCanvas'), ph=$('canvasPlaceholder');
     if (!sec) return;
-    sec.classList.remove('hidden');
+    sec.style.display='flex';
     const img=_activeImgEl();
     if (img) { canvas.style.display='block'; ph.style.display='none'; redrawCanvas(); updateZoomLabel(); }
     else      { canvas.style.display='none';  ph.style.display='flex'; }
@@ -241,11 +241,12 @@
   function closeCanvasOverlay() {
     if (_pendingRegion && $('regName')?.value.trim()) commitPendingRegion();
     else _pendingRegion=null;
-    $('canvasSection')?.classList.add('hidden');
+    const sec=$('canvasSection');
+    if (sec) sec.style.display='none';
     setCanvasState('draw');
     updateCanvasSummary();
-    // テンプレートモーダルを確実に前面に表示
-    $('tplModal')?.classList.remove('hidden');
+    const tplModal=$('tplModal');
+    if (tplModal) { tplModal.classList.remove('hidden'); tplModal.style.display='flex'; }
     const n=_tplRegions.length;
     UIController.showToast(
       n>0
@@ -390,7 +391,7 @@
     // オーバーレイを閉じる（トーストなし）
     if (_pendingRegion && $('regName')?.value.trim()) commitPendingRegion();
     else _pendingRegion=null;
-    $('canvasSection')?.classList.add('hidden');
+    const _sec=$('canvasSection'); if(_sec)_sec.style.display='none';
     setCanvasState('draw');
     addTemplate(fn, identAnchor, layoutAnchor, [..._tplRegions], false);
     UIController.closeModal('tplModal');
