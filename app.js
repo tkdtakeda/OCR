@@ -235,7 +235,6 @@
     const img=_activeImgEl();
     if (img) { canvas.style.display='block'; ph.style.display='none'; redrawCanvas(); updateZoomLabel(); }
     else      { canvas.style.display='none';  ph.style.display='flex'; }
-    setTimeout(()=>section.scrollIntoView({behavior:'smooth',block:'start'}), 60);
   }
 
   /* ── キャンバス状態管理（ステップ1:ドラッグ / ステップ2:名前入力） ── */

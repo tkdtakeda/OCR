@@ -247,14 +247,12 @@
       <h2><i class="fas fa-plus"></i> テンプレート追加</h2>
       <button class="modal-close" id="closeTplModal"><i class="fas fa-xmark"></i></button>
     </div>
+    <!-- フォームエリア（スクロール可） -->
     <div class="modal-bdy">
-      <!-- 帳票名 -->
       <div class="form-group">
         <label class="form-label">帳票名 <span class="required">*</span></label>
         <input type="text" id="tplFormName" class="form-input" placeholder="例：発注書" autocomplete="off">
       </div>
-
-      <!-- 識別アンカー -->
       <div class="anchor-block">
         <div class="anchor-block-hdr">
           <span class="anchor-tag anchor-tag--id">ID</span>
@@ -274,21 +272,17 @@
         </div>
         <input type="file" id="identFileInput" accept="image/*" style="display:none">
       </div>
-
-      <!-- OCR読取フィールド定義 -->
       <div class="anchor-block">
         <div class="anchor-block-hdr">
           <span class="anchor-tag anchor-tag--ocr">OCR</span>
           OCR読取フィールド定義
-          <span class="anchor-desc">画像上でドラッグして範囲を指定</span>
+          <span class="anchor-desc">画像をロードすると下段に描画欄が表示されます</span>
         </div>
-        <!-- レイアウトアンカー切替 -->
         <label class="layout-toggle">
           <input type="checkbox" id="useLayoutAnchor">
           <span class="ptoggle-track"></span>
           <span>識別とは別の参照画像を使用する（スキャンずれ補正に強い）</span>
         </label>
-        <!-- レイアウト画像アップロード -->
         <div id="layoutDropArea" class="hidden">
           <div class="modal-drop-zone modal-drop-zone--sm" id="layoutDropZone">
             <div id="layoutDropHint" class="drop-hint-inner">
@@ -299,46 +293,49 @@
           </div>
           <input type="file" id="layoutFileInput" accept="image/*" style="display:none">
         </div>
-        <!-- 描画キャンバス -->
-        <div id="canvasSection" class="canvas-section hidden" data-cs-state="draw">
-          <!-- ステップガイド -->
-          <div class="cs-steps">
-            <span class="cs-step" data-cs="draw"><span class="cs-step-badge">1</span>範囲をドラッグ</span>
-            <i class="fas fa-chevron-right cs-step-arr"></i>
-            <span class="cs-step" data-cs="name"><span class="cs-step-badge">2</span>名前を入力して追加</span>
-            <i class="fas fa-chevron-right cs-step-arr"></i>
-            <span class="cs-step cs-step-loop"><i class="fas fa-rotate"></i>繰り返し</span>
-          </div>
-          <!-- 名前入力行（キャンバスより上：常に見える位置） -->
-          <div class="cs-name-row">
-            <input type="text" id="regName" class="cs-name-input"
-                   placeholder="①でドラッグ後に名前を入力（先入力も可）" autocomplete="off">
-            <button type="button" id="btnAddRegion" class="btn btn-primary btn-sm" disabled>
-              <i class="fas fa-check"></i> 追加
-            </button>
-          </div>
-          <!-- ズームコントロール -->
-          <div class="canvas-zoom-bar">
-            <button type="button" id="btnZoomOut" class="btn btn-ghost btn-sm" title="縮小"><i class="fas fa-magnifying-glass-minus"></i></button>
-            <span id="zoomLabel" class="zoom-label">Auto</span>
-            <button type="button" id="btnZoomIn" class="btn btn-ghost btn-sm" title="拡大"><i class="fas fa-magnifying-glass-plus"></i></button>
-            <button type="button" id="btnZoomFit" class="btn btn-ghost btn-sm" title="フィットに戻す"><i class="fas fa-compress"></i></button>
-            <span class="zoom-resize-hint"><i class="fas fa-arrows-up-down"></i> 下端をドラッグで縦サイズ変更</span>
-          </div>
-          <!-- キャンバス -->
-          <div class="layout-canvas-wrap" id="layoutCanvasWrap">
-            <div id="canvasPlaceholder" class="canvas-placeholder">
-              <i class="fas fa-image"></i><span>参照画像を読み込んでください</span>
-            </div>
-            <canvas id="layoutCanvas" style="display:none; cursor:crosshair;"></canvas>
-          </div>
-        </div>
-        <!-- 登録済みフィールドリスト -->
-        <div id="regionList" class="region-list">
-          <div class="region-empty-hint">フィールドを追加してください（省略可）</div>
-        </div>
       </div>
     </div>
+
+    <!-- OCR描画エリア（modal-bdyの外・フッターの上に固定） -->
+    <div id="canvasSection" class="canvas-section hidden" data-cs-state="draw">
+      <div class="cs-top-bar">
+        <!-- ステップガイド -->
+        <div class="cs-steps">
+          <span class="cs-step" data-cs="draw"><span class="cs-step-badge">1</span>範囲をドラッグ</span>
+          <i class="fas fa-chevron-right cs-step-arr"></i>
+          <span class="cs-step" data-cs="name"><span class="cs-step-badge">2</span>名前を入力して追加</span>
+          <i class="fas fa-chevron-right cs-step-arr"></i>
+          <span class="cs-step cs-step-loop"><i class="fas fa-rotate"></i>繰り返し</span>
+        </div>
+        <!-- 名前入力行 -->
+        <div class="cs-name-row">
+          <input type="text" id="regName" class="cs-name-input"
+                 placeholder="①でドラッグ後に名前を入力（先入力も可）" autocomplete="off">
+          <button type="button" id="btnAddRegion" class="btn btn-primary btn-sm" disabled>
+            <i class="fas fa-check"></i> 追加
+          </button>
+        </div>
+        <!-- ズームコントロール -->
+        <div class="canvas-zoom-bar">
+          <button type="button" id="btnZoomOut" class="btn btn-ghost btn-sm" title="縮小"><i class="fas fa-magnifying-glass-minus"></i></button>
+          <span id="zoomLabel" class="zoom-label">Auto</span>
+          <button type="button" id="btnZoomIn" class="btn btn-ghost btn-sm" title="拡大"><i class="fas fa-magnifying-glass-plus"></i></button>
+          <button type="button" id="btnZoomFit" class="btn btn-ghost btn-sm" title="フィット"><i class="fas fa-compress"></i></button>
+        </div>
+      </div>
+      <!-- キャンバス -->
+      <div class="layout-canvas-wrap" id="layoutCanvasWrap">
+        <div id="canvasPlaceholder" class="canvas-placeholder">
+          <i class="fas fa-image"></i><span>参照画像を読み込んでください</span>
+        </div>
+        <canvas id="layoutCanvas" style="display:none; cursor:crosshair;"></canvas>
+      </div>
+      <!-- 登録済みフィールドリスト -->
+      <div id="regionList" class="region-list">
+        <div class="region-empty-hint">フィールドを追加してください（省略可）</div>
+      </div>
+    </div>
+
     <div class="modal-ftr">
       <button id="btnTplCancel" class="btn btn-ghost">キャンセル</button>
       <button id="btnTplRegister" class="btn btn-primary"><i class="fas fa-check"></i> 登録</button>

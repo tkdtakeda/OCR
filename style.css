@@ -455,9 +455,11 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 
 /* ── テンプレートモーダル: フィールドリスト ─────────── */
 .region-list {
-  border: 1px solid var(--c-border); border-radius: var(--r-sm);
-  min-height: 48px; padding: 4px; background: var(--c-surface2);
-  display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px;
+  border-top: 1px solid var(--c-border);
+  max-height: 90px; min-height: 32px; flex-shrink: 0;
+  padding: 4px 12px; background: var(--c-surface2);
+  display: flex; flex-direction: column; gap: 3px;
+  overflow-y: auto;
 }
 .region-empty-hint { font-size: .75rem; color: var(--c-text-3);
   text-align: center; padding: 10px 0; }
@@ -519,8 +521,16 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
    追加スタイル: 識別/レイアウトアンカー分離 + キャンバス描画
    ════════════════════════════════════════════════════════ */
 
-/* ── テンプレートモーダル拡張 ───────────────────────── */
-.modal--tpl { width: 640px; }
+/* テンプレートモーダル：上段フォーム＋下段キャンバスの2段レイアウト */
+.modal--tpl { width: 640px; height: 86vh; }
+
+/* 上段フォームエリア：コンテンツ分だけ高さを取り、溢れたらスクロール */
+.modal--tpl .modal-bdy {
+  flex: 0 1 auto;
+  max-height: 38vh;
+  min-height: 60px;
+  overflow-y: auto;
+}
 
 /* アンカーブロック（識別・OCR共通の枠） */
 .anchor-block { border: 1px solid var(--c-border); border-radius: var(--r);
@@ -543,8 +553,21 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 .layout-toggle input { opacity: 0; position: absolute; pointer-events: none; }
 .layout-toggle .ptoggle-track { flex-shrink: 0; }
 
-/* 描画キャンバスセクション */
-.canvas-section { display: flex; flex-direction: column; gap: 8px; }
+/* 下段キャンバスセクション：モーダルflexの残り領域をすべて使う */
+.canvas-section {
+  flex: 1 0 0;
+  display: flex; flex-direction: column; gap: 0;
+  border-top: 1.5px solid var(--c-border);
+  overflow: hidden; min-height: 0;
+}
+/* cs-top-bar: ステップガイド＋入力欄＋ズームをまとめたツールバー */
+.cs-top-bar {
+  flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 8px 12px 6px;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+}
 
 /* ── ステップガイド ──────────────────────────────────── */
 .cs-steps {
@@ -583,13 +606,12 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
   background: #FF6B00;
 }
 
-/* ── 名前入力行（sticky: スクロールしても常に最上部に固定） ─ */
+/* ── 名前入力行（cs-top-bar内の常時表示エリア） ─────────── */
 .cs-name-row {
-  position: sticky; top: 0; z-index: 10;
   display: flex; gap: 8px; align-items: center;
-  padding: 8px 10px; border-radius: var(--r-sm);
+  padding: 6px 8px; border-radius: var(--r-sm);
   border: 1.5px solid var(--c-border-dk); background: var(--c-surface);
-  box-shadow: var(--sh-sm);
+  box-shadow: var(--sh-xs);
   transition: border-color .2s, background .2s, box-shadow .2s;
 }
 .cs-name-input {
@@ -613,26 +635,20 @@ kbd { background: var(--c-surface2); border: 1px solid var(--c-border-dk);
 .canvas-section[data-cs-state="name"] .cs-name-input { color: var(--c-text); }
 
 /* ── ズームコントロールバー ──────────────────────────── */
-.canvas-zoom-bar {
-  display: flex; align-items: center; gap: 4px;
-}
+.canvas-zoom-bar { display: flex; align-items: center; gap: 4px; }
 .zoom-label {
   font-family: var(--font-mono); font-size: .73rem; color: var(--c-text-2);
   background: var(--c-surface2); border: 1px solid var(--c-border);
   border-radius: var(--r-sm); padding: 2px 7px; min-width: 48px; text-align: center;
 }
-.zoom-resize-hint {
-  margin-left: auto; font-size: .68rem; color: var(--c-text-3);
-  display: flex; align-items: center; gap: 4px; white-space: nowrap;
-}
 
-/* ── キャンバスラッパー ──────────────────────────────── */
+/* ── キャンバスラッパー（残り高さを全て使う） ─────────── */
 .layout-canvas-wrap {
-  height: 380px; min-height: 160px; overflow: auto; border: 1.5px solid var(--c-border-dk);
-  border-radius: var(--r-sm); position: relative;
+  flex: 1; min-height: 120px; overflow: auto;
+  border: none; border-top: 1.5px solid var(--c-border-dk);
+  position: relative;
   background: repeating-conic-gradient(#dde5ef 0% 25%, transparent 0% 50%) 0 0 / 12px 12px;
   display: flex; align-items: flex-start; justify-content: center;
-  resize: vertical; /* ネイティブ縦リサイズハンドル */
 }
 .layout-canvas-wrap:has(canvas[style*="display: block"]) { cursor: crosshair; }
 .canvas-placeholder {
