@@ -276,7 +276,7 @@
         <div class="anchor-block-hdr">
           <span class="anchor-tag anchor-tag--ocr">OCR</span>
           OCR読取フィールド定義
-          <span class="anchor-desc">アンカー画像を読み込んでから描画します</span>
+          <span class="anchor-desc">② 識別画像をロード → 範囲描画 → 「登録」でテンプレート完成</span>
         </div>
         <label class="layout-toggle">
           <input type="checkbox" id="useLayoutAnchor">
@@ -302,9 +302,10 @@
       </div>
     </div>
 
-    <div class="modal-ftr">
+    <div class="modal-ftr tpl-ftr">
+      <span class="tpl-ftr-hint">帳票名・識別アンカー名・画像を入力したら「登録」</span>
       <button id="btnTplCancel" class="btn btn-ghost">キャンセル</button>
-      <button id="btnTplRegister" class="btn btn-primary"><i class="fas fa-check"></i> 登録</button>
+      <button id="btnTplRegister" class="btn btn-primary btn-register"><i class="fas fa-check"></i> 登録</button>
     </div>
   </div>
 </div>
@@ -365,7 +366,7 @@
         <span class="cs-step cs-step-loop"><i class="fas fa-rotate"></i>繰り返し</span>
       </div>
       <button type="button" id="btnCloseCanvas" class="btn btn-primary btn-sm">
-        <i class="fas fa-check"></i> 完了（登録画面に戻る）
+        <i class="fas fa-arrow-left"></i> 描画完了 → 登録フォームへ
       </button>
     </div>
     <div class="cs-name-row">

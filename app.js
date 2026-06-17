@@ -52,7 +52,9 @@
     $('btnNext').disabled = state.step >= 4 || !canAdvance();
     const hints = {
       1: state.sourceCanvas ? '✓ 画像が読み込まれました — 「次へ」を押してください' : '帳票画像を貼り付けまたはドロップしてください',
-      2: state.matchResults  ? '✓ 照合完了 — 「次へ」で回転補正・罫線除去に進みます' : 'テンプレートを登録して「照合実行」を押してください',
+      2: state.matchResults  ? '✓ 照合完了 — 「次へ」で回転補正・罫線除去に進みます'
+        : state.templates.length>0 ? '▶ テンプレート登録済み — 「照合実行」ボタンを押してください'
+        : 'テンプレートを登録してから「照合実行」を押してください',
       3: state.processedMats.length > 0 ? '✓ 罫線除去完了 — 「次へ」でOCRに進みます' : '処理中…',
       4: '「OCR実行」で全フィールドを一括認識します',
     };
@@ -242,6 +244,15 @@
     $('canvasSection')?.classList.add('hidden');
     setCanvasState('draw');
     updateCanvasSummary();
+    // テンプレートモーダルを確実に前面に表示
+    $('tplModal')?.classList.remove('hidden');
+    const n=_tplRegions.length;
+    UIController.showToast(
+      n>0
+        ? `${n}件のフィールドを設定しました。帳票名を確認して「登録」を押してください`
+        : '帳票名・アンカー名を確認して「登録」を押してください',
+      'info', 4000
+    );
   }
   function updateCanvasSummary() {
     const btn=$('btnOpenCanvas'), txt=$('canvasSummary');
@@ -376,10 +387,20 @@
     const layoutAnchor=(_useLayoutAnchor&&_layoutDataURL)
       ? { name:'レイアウト参照', dataURL:_layoutDataURL, natW:_layoutNatW, natH:_layoutNatH }
       : null;
-    closeCanvasOverlay();
+    // オーバーレイを閉じる（トーストなし）
+    if (_pendingRegion && $('regName')?.value.trim()) commitPendingRegion();
+    else _pendingRegion=null;
+    $('canvasSection')?.classList.add('hidden');
+    setCanvasState('draw');
     addTemplate(fn, identAnchor, layoutAnchor, [..._tplRegions], false);
     UIController.closeModal('tplModal');
-    UIController.showToast(`「${fn} / ${an}」を登録しました（${_tplRegions.length}フィールド）`,'success');
+    UIController.showToast(
+      `「${fn}」を登録しました — 次は「照合実行」を押してください`,
+      'success', 5000
+    );
+    // 照合実行ボタンを一時的にハイライト
+    const bm=$('btnRunMatch');
+    if(bm){ bm.classList.add('is-pulse'); setTimeout(()=>bm.classList.remove('is-pulse'),3000); }
   }
 
   /* ── Matching ───────────────────────────────────────── */
